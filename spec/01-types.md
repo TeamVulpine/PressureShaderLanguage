@@ -42,6 +42,7 @@ Pressure defines the following resource types,
 - `sampler` for a GPU sampler resource
 - `texture_1d<T>`, `texture_2d<T>`, `texture_2d_array<T>`, and `texture_3d<T>` for GPU texture resources
     - `T` is the scalar type of the sampled texels
+    - Unless otherwise specified, textures sample as `vec[T; 4]`
     - `mut T` means the texture is also writeable
     - More texture types may be added in the future
 
