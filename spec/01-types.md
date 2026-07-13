@@ -40,10 +40,10 @@ Pressure defines the following resource types,
 - `storage<T>` for a GPU storage buffer resource
 - `storage<mut T>` for a writable GPU storage buffer resource
 - `sampler` for a GPU sampler resource
-- `texture<T, layout>` for a GPU texture resource
-    - `T` is the scalar type of the sampled vector
-    - `layout` is one of `1d`, `2d`, `2d_array`, or `3d`. This may be expanded in the future
+- `texture_1d<T>`, `texture_2d<T>`, `texture_2d_array<T>`, and `texture_3d<T>` for GPU texture resources
+    - `T` is the scalar type of the sampled texels
     - `mut T` means the texture is also writeable
+    - More texture types may be added in the future
 
 ## Resource References
 
