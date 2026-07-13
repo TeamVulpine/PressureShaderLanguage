@@ -10,3 +10,7 @@ The `spec` directory contains the specification for the language.
 ## Status
 
 Pressure is still a heavy work in progress. The specification, compiler, and language are still growing, so expect breaking changes and bugs to crop up.
+
+## LLM Usage
+
+Pressure does not use any LLMs, and will not accept any clearly LLM-generated or LLM-assisted pull requests.
