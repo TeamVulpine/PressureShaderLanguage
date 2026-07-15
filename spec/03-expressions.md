@@ -103,6 +103,8 @@ $1997
 
 Identifiers cannot be any of the reserved keywords.
 
+Identifiers beginning with `$` are reserved by convention for the compiler, standard library, and extensions. It is discouraged for user code to declare identifiers beginning with `$`.
+
 ## Access
 
 The access operator uses the syntax `value.access`
