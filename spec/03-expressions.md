@@ -185,7 +185,7 @@ Casts follow the `value as Type` syntax.
 
 ```psi
 someValue as i32
-vec[1, 2, 3] as vec[f64; 4]
+vec[1, 2, 3] as vec[4]f64
 ```
 
 Casts higher precedence than binary operations but lower precedence than unary operations.

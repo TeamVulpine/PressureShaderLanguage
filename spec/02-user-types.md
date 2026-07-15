@@ -9,7 +9,7 @@ A type alias directly refers to that type, and is not a new type itself.
 
 Example:
 ```psi
-type f32vec2 = vec[f32; 2];
+type f32vec2 = vec[2]f32;
 
 type SomeBufferType = storage<[SomeBufferValue]>;
 ```
