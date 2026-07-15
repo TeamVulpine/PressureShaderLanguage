@@ -20,12 +20,12 @@ Pressure defines the following scalar types, based off of Rust's type syntax
 
 Arrays, vectors, and matrices all use similar syntax, since they're all conceptually a list of values of the same type.
 
-The basic slice syntax is the same as Rust's, `[T; N]` and `[T]`, where `T` is the type, and `N` is the number of elements.
+The basic list syntax is `[]T` and `[N]T`, where `T` is the type, and `N` is the number of elements.
 
-Pressure differentiates vectors and matrices by having a keyword before the same slice syntax,
-- `vec[T; N]` for vectors
-- `mat[T; N]` for square matrices
-- `mat[T; C, R]` for rectangular matrices
+Pressure differentiates vectors and matrices by having a keyword before the same list syntax,
+- `vec[N]T` for vectors
+- `mat[N]T` for square matrices
+- `mat[C, R]T` for rectangular matrices
     - `C` is columns, `R` is rows
     - Matrices are treated column-major by default, but this can be changed in the compiler settings.
 
@@ -42,7 +42,7 @@ Pressure defines the following resource types,
 - `sampler` for a GPU sampler resource
 - `texture_1d<T>`, `texture_2d<T>`, `texture_2d_array<T>`, and `texture_3d<T>` for GPU texture resources
     - `T` is the scalar type of the sampled texels
-    - Unless otherwise specified, textures sample as `vec[T; 4]`
+    - Unless otherwise specified, textures sample as `vec[4]T`
     - `mut T` means the texture is also writeable
     - More texture types may be added in the future
 
