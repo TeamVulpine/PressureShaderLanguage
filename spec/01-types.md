@@ -29,7 +29,7 @@ Pressure differentiates vectors and matrices by having a keyword before the same
     - `C` is columns, `R` is rows
     - Matrices are treated column-major by default, but this can be changed in the compiler settings.
 
-Slice lengths are only available when they are known at compile time. Runtime queries for slice lengths are unsupported, even if the backend supports it.
+List lengths are only available when they are known at compile time. Runtime queries for list lengths are unsupported, even if the backend supports it.
 
 Swizzling is not a feature inherent to vectors. This will be expanded upon in future documents.
 
@@ -38,13 +38,15 @@ Swizzling is not a feature inherent to vectors. This will be expanded upon in fu
 Pressure defines the following resource types,
 - `uniform<T>` for a GPU uniform buffer resource
 - `storage<T>` for a GPU storage buffer resource
-- `storage<mut T>` for a writable GPU storage buffer resource
+- `mut_storage<T>` for a GPU storage buffer resource
 - `sampler` for a GPU sampler resource
 - `texture_1d<T>`, `texture_2d<T>`, `texture_2d_array<T>`, and `texture_3d<T>` for GPU texture resources
     - `T` is the scalar type of the sampled texels
     - Unless otherwise specified, textures sample as `vec[4]T`
-    - `mut T` means the texture is also writeable
     - More texture types may be added in the future
+    - Texture types can be prefixed with `mut_` to make them mutable.
+    - Texture types can also be prefixed with `raw_` to make them not sampleable, but directly readable.
+    - `mut_` should always appear before `raw_`
 
 ## Resource References
 
