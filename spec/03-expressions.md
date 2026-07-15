@@ -58,7 +58,7 @@ Number literals may also specify their type using a suffix of one of the builtin
 64i64
 ```
 
-If a number litaral is not explicitly suffixed, the type is automatically determined based on usage.
+If a number literal is not explicitly suffixed, the type is automatically determined based on usage.
 When no unique type can be inferred, integer literals default to `i32` and floating point literals default to `f32`.
 
 ## Boolean Literals
@@ -146,7 +146,7 @@ Pressure defines the following prefix unary operators,
 - `!` for boolean negation
 - `~` for bitwise negation
 
-## Binary Operations
+## Binary Operators
 
 Binary operations are used to combine two expressions.
 
