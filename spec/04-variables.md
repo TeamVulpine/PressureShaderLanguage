@@ -9,13 +9,17 @@ Constants also are the only variable type that can be declared in the global sco
 
 Local variables can also be declared with `let mut`, to signify that they can be mutated.
 
-Variables are allowed to shadow older variables with the same name, and if a variable is shadowed it can no longer be accessed from the scope the shadow is defined.
+Variables are allowed to shadow older variables with the same name, and if a variable is shadowed it can no longer be accessed from the scope the shadowing variable is defined.
 
 Variable declarations take the following forms,
 ```
 const name: Type = initializer;
-let name[: Type] = initializer;
-let mut name[: Type] [= initializer];
+let name: Type = initializer;
+let name = initializer;
+let mut name: Type = initializer;
+let mut name = initializer;
+let mut name: Type;
+let mut name;
 ```
 Where `name` is the name of the variable, `Type` is the type of the variable, and `initializer` is an expression to initialize it.
 
