@@ -21,7 +21,7 @@ Where `name` is the name of the variable, `Type` is the type of the variable, an
 
 Constant variables always require the type and initializer.
 Local immutable variables always require an initializer, but the type can be inferred by usage.
-Local mutable variables can omit both the type and initializer, but must be initialized before reading the value.
+Local mutable variables can omit both the type and initializer.
 
 Examples,
 ```psi
@@ -30,3 +30,6 @@ let tau = Pi * 2;
 let mut someValue;
 let mut count: i32;
 ```
+
+A variable without an initializer is considered uninitialized.
+Before a variable can be used, all possible control flow paths must assign to it.
