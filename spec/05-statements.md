@@ -81,7 +81,7 @@ Pressure also has `return`, `break`, and `discard`.
 
 A `break` statement breaks out of the current loop, continuing execution at the after the loop block.
 
-A `discard` statement immediately halts execution of the current shader invocation. This is only allowed in fragment shaders.
+A `discard` statement immediately halts execution of the current shader invocation, and stops prevents the fragment from producing an output. This is only allowed in fragment shaders.
 
 A `return` statement yields execution back to the caller of the function, and can have an optional expression if the function yields a non-void type.
 
