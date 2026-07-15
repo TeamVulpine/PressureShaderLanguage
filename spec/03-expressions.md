@@ -125,6 +125,17 @@ The invocation operator uses the syntax `value(arguments)`, where `arguments` is
 function(1, 2, true, value)
 ```
 
+## Generic Expansion
+
+The generic expansion operator uses the syntax `.<Types>`, where `Types` is a list of types separated by a comma
+```psi
+value.<i32>
+value.<f32, u32>
+```
+
+The dot is required because Pressure's parser doesn't use semantic information during parsing.
+Without the dot, the parser would have a hard time telling the difference between `a<b` being "a less than b" or the start of a generic expansion.
+
 ## Prefix Unary Operators
 
 Prefix unary operators operate on the expression immediately following them.
@@ -158,6 +169,14 @@ Pressure defines the following operators,
 - `||` for OR
 - `^^` for XOR
 
+### Comparison
+- `==` for equal
+- `!=` for not equal
+- `>=` for greater than or equal
+- `>` for greater than
+- `<=` for less than or equal
+- `<` for less than
+
 ## Casts
 
 Pressure uses the `as` keyword for casts.
@@ -182,9 +201,9 @@ Casts higher precedence than binary operations but lower precedence than unary o
 
 ## Struct Construction
 
-Struct construction has the syntax `new Path { initializers }`.
+Struct construction has the syntax `new Type { initializers }`.
 
-The `Path` is a list of one or more identifiers, separated by a dot.
+The `Type` is a type reference.
 The `initializers` are a list of field initializers, separated by a comma. Trailing commas are allowed.
 
 Field initializers take two forms,
