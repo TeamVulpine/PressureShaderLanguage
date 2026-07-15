@@ -2,7 +2,7 @@
 
 Pressure provides three ways to define types, structs, enums, and type aliases.
 
-## Type Alisaes
+## Type Aliases
 
 Pressure uses the `type` keyword to declare a type alias.
 A type alias directly refers to that type, and is not a new type itself.
