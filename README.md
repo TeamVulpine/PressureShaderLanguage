@@ -5,8 +5,6 @@ Pressure is a modern shader language designed around explicit data flow, predict
 
 Initially, Pressure will support Vulkan (SPIR-V) and Metal (MSL) backends. This may be expanded in the future.
 
-The `spec` directory contains the specification for the language.
-
 ## Status
 
 Pressure is still a heavy work in progress. The specification, compiler, and language are still growing, so expect breaking changes and bugs to crop up.

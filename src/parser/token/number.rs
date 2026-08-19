@@ -42,10 +42,6 @@ impl IntegerBase {
             Self::Hexadecimal => 16,
         };
     }
-
-    pub fn parse(&self, text: &str) -> u32 {
-        return u32::from_str_radix(&text.replace('_', ""), self.base()).unwrap();
-    }
 }
 
 impl NumberLiteral {
