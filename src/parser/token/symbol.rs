@@ -36,6 +36,6 @@ macro_rules! symbols {
 symbols! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum Symbol {
-        Range = "..",
+        Plus = "+",
     }
 }

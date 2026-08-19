@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::parser::{
     source::{SourceCursor, SourceSpan},
-    token::{TokenError, TokenErrorKind, Tokenizer},
+    token::{TokenError, TokenErrorKind},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -20,9 +20,37 @@ pub enum NumberLiteralKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum NumberSuffixKind {
+    U,
+    U8,
+    U16,
+    U32,
+    U64,
+    USize,
+
+    I,
+    I8,
+    I16,
+    I32,
+    I64,
+    ISize,
+
+    F,
+    F16,
+    F32,
+    F64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NumberSuffix {
+    pub kind: NumberSuffixKind,
+    pub start: NonZeroU32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NumberLiteral {
     pub kind: NumberLiteralKind,
-    pub suffix_start: Option<NonZeroU32>,
+    pub suffix: Option<NumberSuffix>,
 }
 
 impl IntegerBase {
@@ -45,12 +73,15 @@ impl IntegerBase {
 }
 
 impl NumberLiteral {
-    pub fn decompose<'a>(&self, span: &SourceSpan<'a>) -> (&'a str, &'a str) {
-        let Some(suffix) = self.suffix_start else {
-            return (span.slice(), "");
+    pub fn decompose<'a>(&self, span: &SourceSpan<'a>) -> (&'a str, Option<NumberSuffixKind>) {
+        let Some(suffix) = self.suffix else {
+            return (span.slice(), None);
         };
 
-        return span.slice().split_at(suffix.get() as usize);
+        return (
+            &span.slice()[..suffix.start.get() as usize],
+            Some(suffix.kind),
+        );
     }
 
     fn parse_base(cursor: &mut SourceCursor) -> IntegerBase {
@@ -85,7 +116,10 @@ impl NumberLiteral {
         return c.is_ascii_digit();
     }
 
-    fn parse_digits<'a>(cursor: &mut SourceCursor<'a>, base: IntegerBase) -> Result<bool, TokenError<'a>> {
+    fn parse_digits<'a>(
+        cursor: &mut SourceCursor<'a>,
+        base: IntegerBase,
+    ) -> Result<bool, TokenError<'a>> {
         let matcher = {
             if let IntegerBase::Binary = base {
                 Self::is_binary_digit
@@ -115,22 +149,46 @@ impl NumberLiteral {
         return Ok(true);
     }
 
-    fn parse_suffix(cursor: &mut SourceCursor) -> Option<NonZeroU32> {
-        if !cursor.is_fn(Tokenizer::is_ident_start) {
-            return None;
+    fn parse_suffix(cursor: &mut SourceCursor) -> Option<NumberSuffix> {
+        const KINDS: &[(&str, NumberSuffixKind)] = &[
+            ("u", NumberSuffixKind::U),
+            ("u8", NumberSuffixKind::U8),
+            ("u16", NumberSuffixKind::U16),
+            ("u32", NumberSuffixKind::U32),
+            ("u64", NumberSuffixKind::U64),
+            ("usize", NumberSuffixKind::USize),
+            ("i", NumberSuffixKind::I),
+            ("i8", NumberSuffixKind::I8),
+            ("i16", NumberSuffixKind::I16),
+            ("i32", NumberSuffixKind::I32),
+            ("i64", NumberSuffixKind::I64),
+            ("isize", NumberSuffixKind::ISize),
+            ("f", NumberSuffixKind::F),
+            ("f16", NumberSuffixKind::F16),
+            ("f32", NumberSuffixKind::F32),
+            ("f64", NumberSuffixKind::F64),
+        ];
+
+        let start = cursor.relative_offset();
+
+        for (suffix, kind) in KINDS {
+            if cursor.consume_str(*suffix) {
+                return Some(NumberSuffix {
+                    kind: *kind,
+                    start: NonZeroU32::new(start).unwrap(),
+                });
+            }
         }
 
-        let pos = cursor.relative_offset();
-
-        cursor.while_fn(Tokenizer::is_ident_cont);
-
-        return NonZeroU32::new(pos);
+        return None;
     }
 
     pub fn parse<'a>(cursor: &mut SourceCursor<'a>) -> Result<Option<Self>, TokenError<'a>> {
         let base = Self::parse_base(cursor);
 
-        if !Self::parse_digits(cursor, base)? {
+        let parsed_whole = Self::parse_digits(cursor, base)?;
+
+        if !parsed_whole {
             let IntegerBase::Decimal = base else {
                 return Err(TokenError {
                     span: cursor.commit(),
@@ -146,14 +204,14 @@ impl NumberLiteral {
         let IntegerBase::Decimal = base else {
             return Ok(Some(Self {
                 kind: NumberLiteralKind::Integer(base),
-                suffix_start: Self::parse_suffix(cursor),
+                suffix: Self::parse_suffix(cursor),
             }));
         };
 
         if !cursor.is_fn(|c| c == '.' || c == 'e' || c == 'E') {
             return Ok(Some(Self {
                 kind: NumberLiteralKind::Integer(base),
-                suffix_start: Self::parse_suffix(cursor),
+                suffix: Self::parse_suffix(cursor),
             }));
         }
 
@@ -161,6 +219,8 @@ impl NumberLiteral {
             cursor.advance();
 
             Self::parse_digits(cursor, IntegerBase::Decimal)?;
+        } else if !parsed_whole {
+            return Ok(None);
         }
 
         if cursor.is_fn(|c| c == 'e' || c == 'E') {
@@ -178,7 +238,7 @@ impl NumberLiteral {
 
         return Ok(Some(Self {
             kind: NumberLiteralKind::Float,
-            suffix_start: Self::parse_suffix(cursor),
+            suffix: Self::parse_suffix(cursor),
         }));
     }
 }

@@ -3,46 +3,54 @@ pub mod keyword;
 pub mod number;
 pub mod symbol;
 
-macro_rules! keywords {
-    (
-        $(
-            $(#[$enum_meta:meta])*
-            $vis:vis enum $t:ident {
-                $($name:ident = $str:literal),* $(,)?
-            }
-        )+
-    ) => {
-        $(
-            $(#[$enum_meta])*
-            $vis enum $t {
-                $($name),*
-            }
-
-            impl $t {
-                pub fn from(keyword: &str) -> Option<Self> {
-                    return match keyword {
-                        $(
-                            $str => Some(Self::$name),
-                        )*
-                        _ => None,
-                    }
-                }
-
-                pub fn repr(&self) -> &'static str {
-                    return match self {
-                        $(Self::$name => $str),*
-                    };
-                }
-            }
-        )+
-    }
-}
-pub(crate) use keywords;
 use thiserror::Error;
 
-use crate::parser::{source::{SourceCursor, SourceSpan}, token::{ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral, symbol::Symbol}};
+use crate::parser::{
+    source::{SourceCursor, SourceSpan},
+    token::{ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral, symbol::Symbol},
+};
 
-#[derive(Debug, Clone, Copy)]
+pub(crate) use keywords_macro::keywords;
+
+mod keywords_macro {
+    macro_rules! keywords {
+        (
+            $(
+                $(#[$enum_meta:meta])*
+                $vis:vis enum $t:ident {
+                    $($name:ident = $str:literal),* $(,)?
+                }
+            )+
+        ) => {
+            $(
+                $(#[$enum_meta])*
+                $vis enum $t {
+                    $($name),*
+                }
+
+                impl $t {
+                    pub fn from(keyword: &str) -> Option<Self> {
+                        return match keyword {
+                            $(
+                                $str => Some(Self::$name),
+                            )*
+                            _ => None,
+                        }
+                    }
+
+                    pub fn repr(&self) -> &'static str {
+                        return match self {
+                            $(Self::$name => $str),*
+                        };
+                    }
+                }
+            )+
+        }
+    }
+    pub(crate) use keywords;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     Identifier(Option<PseudoKeyword>),
     Keyword(Keyword),
@@ -52,25 +60,25 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Token<'a> {
     pub span: SourceSpan<'a>,
     pub kind: TokenKind,
 }
 
-#[derive(Debug, Clone, Error)]
+#[derive(Debug, Clone, Copy, Error)]
 pub enum TokenErrorKind {
-    #[error("Unexpected character in input: '{0}'.")]
+    #[error("found unexpected character in input: '{0}'.")]
     UnexpectedCharacter(char),
-    #[error("Unclosed multiline comment in input.")]
+    #[error("while parsing multiline comment, reached EOF before closing.")]
     UnclosedMultilineComment,
-    #[error("Number with trailing underscore in input.")]
+    #[error("while parsing number literal, found trailing underscore in input.")]
     NumberTrailingUnderscore,
-    #[error("Expected digits in input.")]
+    #[error("while parsing number literal, expected digits in input.")]
     ExpectedDigits,
-    #[error("Expected exponent in input.")]
+    #[error("while parsing number literal, expected exponent digits in input.")]
     ExpectedExponentDigits,
-    #[error("Unclosed string literal in input.")]
+    #[error("while parsing string literal, reached EOF before closing quote.")]
     UnclosedStringLiteral,
 }
 
