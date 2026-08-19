@@ -26,14 +26,12 @@ pub enum NumberSuffixKind {
     U16,
     U32,
     U64,
-    USize,
 
     I,
     I8,
     I16,
     I32,
     I64,
-    ISize,
 
     F,
     F16,
@@ -156,13 +154,13 @@ impl NumberLiteral {
             ("u16", NumberSuffixKind::U16),
             ("u32", NumberSuffixKind::U32),
             ("u64", NumberSuffixKind::U64),
-            ("usize", NumberSuffixKind::USize),
+            
             ("i", NumberSuffixKind::I),
             ("i8", NumberSuffixKind::I8),
             ("i16", NumberSuffixKind::I16),
             ("i32", NumberSuffixKind::I32),
             ("i64", NumberSuffixKind::I64),
-            ("isize", NumberSuffixKind::ISize),
+
             ("f", NumberSuffixKind::F),
             ("f16", NumberSuffixKind::F16),
             ("f32", NumberSuffixKind::F32),

@@ -36,6 +36,26 @@ macro_rules! symbols {
 symbols! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub enum Symbol {
-        Plus = "+",
+        // Operators
+        RangeTo = "..=",
+        Range = "..",
+
+        Add = "+",
+        Subtract = "-",
+
+        Multiply = "*",
+        Divide = "/",
+        Remainder = "%",
+
+        LessThan = "<",
+        GreaterThan = ">",
+        ParenOpen = "(",
+        ParenClose = ")",
+
+        // Access
+        Dot = ".",
+        DoubleColon = "::",
+        BracketOpen = "[",
+        BracketClose = "]",
     }
 }

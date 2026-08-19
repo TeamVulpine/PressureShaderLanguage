@@ -1,7 +1,7 @@
 use pressure_shader_language::parser::{
     diagnostic::Diagnostics,
     parse_tree::{expect_keyword, expect_pseudo_keyword, expect_symbol},
-    token::{TokenKind, Tokenizer, ident::PseudoKeyword, keyword::Keyword, symbol::Symbol},
+    token::{Tokenizer, ident::PseudoKeyword, keyword::Keyword, symbol::Symbol},
 };
 
 fn main() {
@@ -10,7 +10,7 @@ fn main() {
     let mut tokenizer = Tokenizer::new(&contents, Some("test.psi"));
     let mut diagnostics = Diagnostics::new();
 
-    expect_symbol(&mut tokenizer, &mut diagnostics, Symbol::Plus, true);
+    expect_symbol(&mut tokenizer, &mut diagnostics, Symbol::Add, true);
     expect_keyword(&mut tokenizer, &mut diagnostics, Keyword::Let, true);
     expect_pseudo_keyword(
         &mut tokenizer,

@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use crate::parser::{
     diagnostic::{Diagnostic, DiagnosticKind, DiagnosticLevel, Diagnostics},
     source::SourceSpan,
@@ -5,18 +7,6 @@ use crate::parser::{
 };
 
 pub mod expr;
-
-fn push_error<'a>(
-    diagnostics: &mut Diagnostics<'a>,
-    kind: DiagnosticKind<'a>,
-    span: SourceSpan<'a>,
-) {
-    diagnostics.push(Diagnostic {
-        kind,
-        level: DiagnosticLevel::Error,
-        span,
-    });
-}
 
 pub fn expect_symbol<'a>(
     tokenizer: &mut Tokenizer<'a>,
@@ -27,8 +17,7 @@ pub fn expect_symbol<'a>(
     let token = match tokenizer.peek() {
         Ok(token) => token,
         Err(err) => {
-            push_error(
-                diagnostics,
+            diagnostics.push_error(
                 DiagnosticKind::ExpectedSymbol {
                     symbol,
                     got: Box::new(err.kind.into()),
@@ -52,8 +41,7 @@ pub fn expect_symbol<'a>(
         return token.span;
     }
 
-    push_error(
-        diagnostics,
+    diagnostics.push_error(
         DiagnosticKind::ExpectedSymbol {
             symbol,
             got: Box::new(DiagnosticKind::from_token(token)),
@@ -73,8 +61,7 @@ pub fn expect_keyword<'a>(
     let token = match tokenizer.peek() {
         Ok(token) => token,
         Err(err) => {
-            push_error(
-                diagnostics,
+            diagnostics.push_error(
                 DiagnosticKind::ExpectedKeyword {
                     keyword,
                     got: Box::new(err.kind.into()),
@@ -98,8 +85,7 @@ pub fn expect_keyword<'a>(
         return token.span;
     }
 
-    push_error(
-        diagnostics,
+    diagnostics.push_error(
         DiagnosticKind::ExpectedKeyword {
             keyword,
             got: Box::new(DiagnosticKind::from_token(token)),
@@ -119,8 +105,7 @@ pub fn expect_pseudo_keyword<'a>(
     let token = match tokenizer.peek() {
         Ok(token) => token,
         Err(err) => {
-            push_error(
-                diagnostics,
+            diagnostics.push_error(
                 DiagnosticKind::ExpectedPseudoKeyword {
                     keyword,
                     got: Box::new(err.kind.into()),
@@ -144,8 +129,7 @@ pub fn expect_pseudo_keyword<'a>(
         return token.span;
     }
 
-    push_error(
-        diagnostics,
+    diagnostics.push_error(
         DiagnosticKind::ExpectedPseudoKeyword {
             keyword,
             got: Box::new(DiagnosticKind::from_token(token)),

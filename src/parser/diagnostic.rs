@@ -10,6 +10,10 @@ use crate::parser::{
     },
 };
 
+#[derive(Debug, Error, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[error("Fatal parsing error. See diagnostics for more information.")]
+pub struct FatalParsingError;
+
 #[derive(Debug, Error, Clone)]
 pub enum DiagnosticKind<'a> {
     #[error("failed to parse token: {0}")]
@@ -73,6 +77,36 @@ impl<'a> Diagnostics<'a> {
         }
 
         self.diagnostics.push(diagnostic);
+    }
+
+    pub fn push_warning(&mut self, kind: DiagnosticKind<'a>, span: SourceSpan<'a>) {
+        self.push(Diagnostic {
+            kind,
+            level: DiagnosticLevel::Warning,
+            span,
+        });
+    }
+
+    pub fn push_error(&mut self, kind: DiagnosticKind<'a>, span: SourceSpan<'a>) {
+        self.push(Diagnostic {
+            kind,
+            level: DiagnosticLevel::Error,
+            span,
+        });
+    }
+
+    pub fn push_fatal(
+        &mut self,
+        kind: DiagnosticKind<'a>,
+        span: SourceSpan<'a>,
+    ) -> Result<!, FatalParsingError> {
+        self.push(Diagnostic {
+            kind,
+            level: DiagnosticLevel::Fatal,
+            span,
+        });
+
+        return Err(FatalParsingError);
     }
 
     pub fn has_error_or_fatal(&self) -> bool {
