@@ -40,6 +40,8 @@ pub enum DiagnosticKind<'a> {
         keyword: PseudoKeyword,
         got: Box<DiagnosticKind<'a>>,
     },
+    #[error("expected identifier, {got}")]
+    ExpectedIdent { got: Box<DiagnosticKind<'a>> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

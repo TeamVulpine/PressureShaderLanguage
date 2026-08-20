@@ -1,14 +1,16 @@
 use crate::parser::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    source::SourceSpan,
+    source::{SourceSpan, Spanned},
     token::{Token, TokenKind, Tokenizer, ident::PseudoKeyword, keyword::Keyword, symbol::Symbol},
 };
 
 pub mod expr;
+pub mod path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MismatchHandling {
     Skip,
+    SkipTo(&'static [TokenKind]),
     Consume,
     Fatal,
 }
@@ -29,8 +31,24 @@ impl MismatchHandling {
         return Ok(());
     }
 
-    fn consume_on_mismatch(&self) -> bool {
-        return *self == Self::Consume;
+    fn apply_mismatch<'a>(&self, tokenizer: &mut Tokenizer<'a>, diagnostics: &mut Diagnostics<'a>) {
+        match self {
+            Self::Consume => {
+                _ = tokenizer.next();
+            }
+            Self::SkipTo(tokens) => {
+                _ = tokenizer.next();
+
+                loop {
+                    let peek = peek_token(tokenizer, diagnostics);
+
+                    if tokens.contains(&peek.kind) || peek.kind == TokenKind::Eof {
+                        break;
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -48,6 +66,47 @@ pub fn peek_token<'a>(
             }
         }
     }
+}
+
+pub fn try_ident<'a>(
+    tokenizer: &mut Tokenizer<'a>,
+    diagnostics: &mut Diagnostics<'a>,
+) -> Option<Spanned<'a, Option<PseudoKeyword>>> {
+    let token = peek_token(tokenizer, diagnostics);
+
+    let TokenKind::Identifier(pseudo) = token.kind else {
+        return None;
+    };
+
+    _ = tokenizer.next();
+
+    return Some(token.span.into_spanned(pseudo));
+}
+
+pub fn expect_ident<'a>(
+    tokenizer: &mut Tokenizer<'a>,
+    diagnostics: &mut Diagnostics<'a>,
+    mismatch_handling: MismatchHandling,
+) -> Result<Option<Spanned<'a, Option<PseudoKeyword>>>, FatalParsingError> {
+    let token = peek_token(tokenizer, diagnostics);
+
+    let TokenKind::Identifier(pseudo) = token.kind else {
+        mismatch_handling.push_diagnostic(
+            diagnostics,
+            DiagnosticKind::ExpectedIdent {
+                got: Box::new(DiagnosticKind::from_token(token)),
+            },
+            token.span,
+        )?;
+
+        mismatch_handling.apply_mismatch(tokenizer, diagnostics);
+
+        return Ok(None);
+    };
+
+    _ = tokenizer.next();
+
+    return Ok(Some(token.span.into_spanned(pseudo)));
 }
 
 pub fn try_token<'a>(
@@ -104,9 +163,7 @@ pub fn expect_token<'a>(
         return Ok(token.span);
     }
 
-    if mismatch_handling.consume_on_mismatch() {
-        _ = tokenizer.next();
-    }
+    mismatch_handling.apply_mismatch(tokenizer, diagnostics);
 
     mismatch_handling.push_diagnostic(
         diagnostics,

@@ -137,7 +137,6 @@ impl NumberLiteral {
         while cursor.is_fn(matcher) {
             cursor.advance();
 
-
             if cursor.while_char('_') && !cursor.is_fn(matcher) {
                 return Err(TokenError {
                     span: cursor.commit(),
@@ -156,13 +155,11 @@ impl NumberLiteral {
             ("u16", NumberSuffixKind::U16),
             ("u8", NumberSuffixKind::U8),
             ("u", NumberSuffixKind::U),
-
             ("i64", NumberSuffixKind::I64),
             ("i32", NumberSuffixKind::I32),
             ("i16", NumberSuffixKind::I16),
             ("i8", NumberSuffixKind::I8),
             ("i", NumberSuffixKind::I),
-
             ("f64", NumberSuffixKind::F64),
             ("f32", NumberSuffixKind::F32),
             ("f16", NumberSuffixKind::F16),

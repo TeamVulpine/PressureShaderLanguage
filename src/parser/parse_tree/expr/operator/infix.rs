@@ -34,31 +34,51 @@ pub enum InfixOperator {
     RangeTo, // ..=
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum InfixOperatorPrecedence {
+    Range = 10,
+    BoolOr = 20,
+    BoolAnd = 30,
+    Compare = 40,
+    BitOr = 43,
+    BitXor = 44,
+    BitAnd = 45,
+    Shift = 50,
+    AddSub = 60,
+    MulDiv = 70,
+}
+
 pub struct InfixOperationExpr<'a> {
     pub operands: Box<[Expr<'a>; 2]>,
     pub operator: Spanned<'a, InfixOperator>,
 }
 
 impl InfixOperator {
-    pub fn binding_power(self) -> (u8, u8) {
-        match self {
-            Self::Mul | Self::Div | Self::Mod => (70, 71),
+    const fn precedence(self) -> InfixOperatorPrecedence {
+        return match self {
+            Self::Mul | Self::Div | Self::Mod => InfixOperatorPrecedence::MulDiv,
 
-            Self::Add | Self::Sub => (60, 61),
+            Self::Add | Self::Sub => InfixOperatorPrecedence::AddSub,
 
-            Self::Shl | Self::Shr => (50, 51),
+            Self::Shl | Self::Shr => InfixOperatorPrecedence::Shift,
 
-            Self::BitAnd => (45, 46),
-            Self::BitXor => (44, 45),
-            Self::BitOr => (43, 44),
+            Self::BitAnd => InfixOperatorPrecedence::BitAnd,
+            Self::BitXor => InfixOperatorPrecedence::BitXor,
+            Self::BitOr => InfixOperatorPrecedence::BitOr,
 
-            Self::Eq | Self::Ne | Self::Gt | Self::Lt | Self::Ge | Self::Le => (40, 41),
+            Self::Eq | Self::Ne | Self::Gt | Self::Lt | Self::Ge | Self::Le => {
+                InfixOperatorPrecedence::Compare
+            }
 
-            Self::BoolAnd => (30, 31),
-            Self::BoolOr => (20, 21),
+            Self::BoolAnd => InfixOperatorPrecedence::BoolAnd,
+            Self::BoolOr => InfixOperatorPrecedence::BoolOr,
 
-            Self::Range | Self::RangeTo => (10, 11),
-        }
+            Self::Range | Self::RangeTo => InfixOperatorPrecedence::Range,
+        };
+    }
+
+    pub const fn binding_power(self) -> (u8, u8) {
+        return self.precedence().binding_power();
     }
 
     pub fn try_parse<'a>(
@@ -97,5 +117,11 @@ impl InfixOperator {
         }
 
         return None;
+    }
+}
+
+impl InfixOperatorPrecedence {
+    const fn binding_power(&self) -> (u8, u8) {
+        return (*self as u8, *self as u8 + 1);
     }
 }

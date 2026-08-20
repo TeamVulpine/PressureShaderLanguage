@@ -31,6 +31,7 @@ pub struct SourceSpan<'a> {
     end_pos: SourcePos,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Spanned<'a, T> {
     pub value: T,
     pub span: SourceSpan<'a>,
