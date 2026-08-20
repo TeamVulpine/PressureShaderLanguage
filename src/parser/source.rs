@@ -31,6 +31,11 @@ pub struct SourceSpan<'a> {
     end_pos: SourcePos,
 }
 
+pub struct Spanned<'a, T> {
+    pub value: T,
+    pub span: SourceSpan<'a>,
+}
+
 impl SourcePos {
     fn advance(&mut self, c: char) {
         if c != '\n' {
@@ -213,6 +218,10 @@ impl<'a> SourceSpan<'a> {
 
     pub fn slice(&self) -> &'a str {
         return &self.source[self.span.0 as usize..self.span.1 as usize];
+    }
+
+    pub fn into_spanned<T>(&self, value: T) -> Spanned<'a, T> {
+        return Spanned { value, span: *self };
     }
 }
 

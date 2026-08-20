@@ -136,6 +136,8 @@ impl NumberLiteral {
 
         while cursor.is_fn(matcher) {
             cursor.advance();
+
+
             if cursor.while_char('_') && !cursor.is_fn(matcher) {
                 return Err(TokenError {
                     span: cursor.commit(),
@@ -149,22 +151,22 @@ impl NumberLiteral {
 
     fn parse_suffix(cursor: &mut SourceCursor) -> Option<NumberSuffix> {
         const KINDS: &[(&str, NumberSuffixKind)] = &[
-            ("u", NumberSuffixKind::U),
-            ("u8", NumberSuffixKind::U8),
-            ("u16", NumberSuffixKind::U16),
-            ("u32", NumberSuffixKind::U32),
             ("u64", NumberSuffixKind::U64),
-            
-            ("i", NumberSuffixKind::I),
-            ("i8", NumberSuffixKind::I8),
-            ("i16", NumberSuffixKind::I16),
-            ("i32", NumberSuffixKind::I32),
-            ("i64", NumberSuffixKind::I64),
+            ("u32", NumberSuffixKind::U32),
+            ("u16", NumberSuffixKind::U16),
+            ("u8", NumberSuffixKind::U8),
+            ("u", NumberSuffixKind::U),
 
-            ("f", NumberSuffixKind::F),
-            ("f16", NumberSuffixKind::F16),
-            ("f32", NumberSuffixKind::F32),
+            ("i64", NumberSuffixKind::I64),
+            ("i32", NumberSuffixKind::I32),
+            ("i16", NumberSuffixKind::I16),
+            ("i8", NumberSuffixKind::I8),
+            ("i", NumberSuffixKind::I),
+
             ("f64", NumberSuffixKind::F64),
+            ("f32", NumberSuffixKind::F32),
+            ("f16", NumberSuffixKind::F16),
+            ("f", NumberSuffixKind::F),
         ];
 
         let start = cursor.relative_offset();

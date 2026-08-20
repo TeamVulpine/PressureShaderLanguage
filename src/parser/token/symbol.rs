@@ -40,22 +40,61 @@ symbols! {
         RangeTo = "..=",
         Range = "..",
 
+        ShiftLeftAssign = "<<=",
+        ShiftRightAssign = ">>=",
+
+        AddAssign = "+=",
+        SubtractAssign = "-=",
+        MultiplyAssign = "*=",
+        DivideAssign = "/=",
+        RemainderAssign = "%=",
+
+        Equal = "==",
+        NotEqual = "!=",
+        LessThanOrEqual = "<=",
+        GreaterThanOrEqual = ">=",
+
+        BooleanAnd = "&&",
+        BooleanOr = "||",
+
+        BitwiseAndAssign = "&=",
+        BitwiseOrAssign = "|=",
+        BitwiseXorAssign = "^=",
+
+        ShiftLeft = "<<",
+        ShiftRight = ">>",
+
         Add = "+",
         Subtract = "-",
-
         Multiply = "*",
         Divide = "/",
         Remainder = "%",
 
         LessThan = "<",
         GreaterThan = ">",
-        ParenOpen = "(",
-        ParenClose = ")",
+
+        BitwiseAnd = "&",
+        BitwiseOr = "|",
+        BitwiseXor = "^",
+
+        Not = "!",
+        BitwiseNot = "~",
 
         // Access
-        Dot = ".",
         DoubleColon = "::",
+        Dot = ".",
+
+        // Delimiters
+        ParenOpen = "(",
+        ParenClose = ")",
         BracketOpen = "[",
         BracketClose = "]",
+        BraceOpen = "{",
+        BraceClose = "}",
+
+        Comma = ",",
+        Semicolon = ";",
+        Colon = ":",
+        Assign = "=",
     }
 }

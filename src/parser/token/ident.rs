@@ -7,5 +7,6 @@ keywords! {
     pub enum PseudoKeyword {
         Discard = "_",
         Where = "where",
+        From = "from",
     }
 }

@@ -201,6 +201,8 @@ impl<'a> Tokenizer<'a> {
         }));
     }
 
+    // String parsing is intentionally left simple.
+    // It's only used for module resolution, so we don't need sophisticated escape handling.
     fn parse_string(&mut self) -> Result<Option<Token<'a>>, TokenError<'a>> {
         if !self.cursor.consume_char('"') {
             return Ok(None);
