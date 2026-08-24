@@ -49,7 +49,7 @@ enum InfixOperatorPrecedence {
 }
 
 pub struct InfixOperationExpr<'a> {
-    pub operands: Box<[Expr<'a>; 2]>,
+    pub operands: Box<[Spanned<'a, Expr<'a>>; 2]>,
     pub operator: Spanned<'a, InfixOperator>,
 }
 

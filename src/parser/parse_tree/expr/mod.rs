@@ -1,10 +1,28 @@
-use crate::parser::{parse_tree::expr::operator::OperationExpr, source::Spanned};
+use crate::parser::{
+    diagnostic::{Diagnostics, FatalParsingError},
+    parse_tree::expr::{atom::AtomExpr, operator::OperationExpr},
+    source::Spanned,
+    token::Tokenizer,
+};
 
-pub mod literal;
+pub mod atom;
 pub mod operator;
 
-pub enum ExprKind<'a> {
+pub enum Expr<'a> {
     Operation(OperationExpr<'a>),
+    Atom(AtomExpr<'a>),
 }
 
-pub type Expr<'a> = Spanned<'a, ExprKind<'a>>;
+impl<'a> Expr<'a> {
+    pub fn try_parse(
+        tokenizer: &mut Tokenizer<'a>,
+        diagnostics: &mut Diagnostics<'a>,
+    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        let Some(atom) = AtomExpr::try_parse(tokenizer, diagnostics)? else {
+            return Ok(None);
+        };
+
+        // for now we just return the atom. I still need to implement the pratt parser.
+        return Ok(Some(atom.map(Expr::Atom)));
+    }
+}

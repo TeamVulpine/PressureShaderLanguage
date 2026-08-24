@@ -16,6 +16,8 @@ keywords! {
         Static = "static",
         Mut = "mut",
         Const = "const",
+        Trait = "trait",
+        Impl = "impl",
 
         // Values
         True = "true",

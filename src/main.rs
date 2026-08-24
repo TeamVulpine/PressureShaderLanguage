@@ -1,9 +1,5 @@
 use pressure_shader_language::parser::{
-    diagnostic::Diagnostics,
-    parse_tree::{
-        MismatchHandling, expect_keyword, expect_pseudo_keyword, expect_symbol, path::Path,
-    },
-    token::{Tokenizer, ident::PseudoKeyword, keyword::Keyword, symbol::Symbol},
+    diagnostic::Diagnostics, parse_tree::symbol::SymbolPath, token::Tokenizer,
 };
 
 fn main() {
@@ -12,7 +8,7 @@ fn main() {
     let mut tokenizer = Tokenizer::new(&contents, Some("test.psi"));
     let mut diagnostics = Diagnostics::new();
 
-    let path = Path::try_parse(&mut tokenizer, &mut diagnostics).unwrap();
+    let path = SymbolPath::try_parse(&mut tokenizer, &mut diagnostics, false).unwrap();
 
     println!("{:?}", path);
 

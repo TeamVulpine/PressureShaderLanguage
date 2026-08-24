@@ -10,6 +10,16 @@ keywords! {
         From = "from",
 
         // Types
+        Vec = "vec",
+        Mat = "mat",
+
+        Texture1d = "texture_1d",
+        Texture2d = "texture_2d",
+        Texture2dArray = "texture_2d_array",
+        Texture3d = "texture_3d",
+
+        Sampler = "sampler",
+
         SelfType = "Self",
         Bool = "bool",
 

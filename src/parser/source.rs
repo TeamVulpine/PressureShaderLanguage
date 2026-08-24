@@ -265,3 +265,12 @@ impl<'a> Display for SourceSpan<'a> {
         );
     }
 }
+
+impl<'a, T> Spanned<'a, T> {
+    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Spanned<'a, U> {
+        return Spanned {
+            value: f(self.value),
+            span: self.span,
+        };
+    }
+}

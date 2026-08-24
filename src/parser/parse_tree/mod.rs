@@ -1,11 +1,15 @@
 use crate::parser::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
     source::{SourceSpan, Spanned},
-    token::{Token, TokenKind, Tokenizer, ident::PseudoKeyword, keyword::Keyword, symbol::Symbol},
+    token::{
+        Token, TokenKind, Tokenizer, ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral,
+        symbol::Symbol,
+    },
 };
 
 pub mod expr;
-pub mod path;
+pub mod symbol;
+pub mod ty;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MismatchHandling {
@@ -36,17 +40,15 @@ impl MismatchHandling {
             Self::Consume => {
                 _ = tokenizer.next();
             }
-            Self::SkipTo(tokens) => {
+            Self::SkipTo(tokens) => loop {
                 _ = tokenizer.next();
 
-                loop {
-                    let peek = peek_token(tokenizer, diagnostics);
+                let peek = peek_token(tokenizer, diagnostics);
 
-                    if tokens.contains(&peek.kind) || peek.kind == TokenKind::Eof {
-                        break;
-                    }
+                if tokens.contains(&peek.kind) || peek.kind == TokenKind::Eof {
+                    break;
                 }
-            }
+            },
             _ => {}
         }
     }
@@ -81,6 +83,21 @@ pub fn try_ident<'a>(
     _ = tokenizer.next();
 
     return Some(token.span.into_spanned(pseudo));
+}
+
+pub fn try_number<'a>(
+    tokenizer: &mut Tokenizer<'a>,
+    diagnostics: &mut Diagnostics<'a>,
+) -> Option<Spanned<'a, NumberLiteral>> {
+    let token = peek_token(tokenizer, diagnostics);
+
+    let TokenKind::NumberLiteral(number) = token.kind else {
+        return None;
+    };
+
+    _ = tokenizer.next();
+
+    return Some(token.span.into_spanned(number));
 }
 
 pub fn expect_ident<'a>(
