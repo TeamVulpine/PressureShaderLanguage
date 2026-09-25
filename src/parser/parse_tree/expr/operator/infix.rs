@@ -2,7 +2,7 @@ use crate::parser::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
     parse_tree::{
         MismatchHandling, expect_parse,
-        expr::{Expr, operator::prefix::PrefixOperationExpr},
+        expr::{Expr, operator::cast::CastOperationExpression},
         peek_symbol,
     },
     source::Spanned,
@@ -137,7 +137,7 @@ impl<'a> InfixOperationExpr<'a> {
         diagnostics: &mut Diagnostics<'a>,
         min_binding: u8,
     ) -> Result<Option<Spanned<'a, Expr<'a>>>, FatalParsingError> {
-        let Some(mut lhs) = PrefixOperationExpr::try_parse(tokenizer, diagnostics)? else {
+        let Some(mut lhs) = CastOperationExpression::try_parse(tokenizer, diagnostics)? else {
             return Ok(None);
         };
 

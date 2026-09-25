@@ -5,13 +5,14 @@ use crate::parser::{
         expr::{
             atom::AtomExpr,
             operator::{
-                infix::InfixOperationExpr, postfix::PostfixOperationExpr,
-                prefix::PrefixOperationExpr,
+                cast::CastOperationExpression, infix::InfixOperationExpr,
+                postfix::PostfixOperationExpr, prefix::PrefixOperationExpr,
             },
         },
+        try_list,
     },
     source::Spanned,
-    token::Tokenizer,
+    token::{Tokenizer, symbol::Symbol},
 };
 
 pub mod atom;
@@ -22,6 +23,7 @@ pub enum Expr<'a> {
     PostfixOperation(PostfixOperationExpr<'a>),
     PrefixOperation(PrefixOperationExpr<'a>),
     InfixOperation(InfixOperationExpr<'a>),
+    CastOperation(CastOperationExpression<'a>),
     Atom(AtomExpr<'a>),
     Error,
 }
@@ -48,6 +50,21 @@ impl<'a> Expr<'a> {
                 got: Box::new(diagnostic),
             },
             || Self::Error,
+        );
+    }
+
+    pub fn try_list(
+        tokenizer: &mut Tokenizer<'a>,
+        diagnostics: &mut Diagnostics<'a>,
+    ) -> Result<Option<Spanned<'a, Box<[Spanned<'a, Self>]>>>, FatalParsingError> {
+        return try_list(
+            tokenizer,
+            diagnostics,
+            Self::expect_parse,
+            Symbol::ParenOpen,
+            Symbol::ParenClose,
+            Symbol::Comma,
+            true,
         );
     }
 }

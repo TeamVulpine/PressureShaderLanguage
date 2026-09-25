@@ -62,4 +62,21 @@ impl<'a> GenericArgument<'a> {
             true,
         );
     }
+
+    pub fn expect_list(
+        tokenizer: &mut Tokenizer<'a>,
+        diagnostics: &mut Diagnostics<'a>,
+        mismatch_handling: MismatchHandling,
+    ) -> Result<Spanned<'a, Box<[Spanned<'a, Self>]>>, FatalParsingError> {
+        return expect_parse(
+            tokenizer,
+            diagnostics,
+            mismatch_handling,
+            Self::try_list,
+            |diagnostic| DiagnosticKind::ExpectedGenericArgument {
+                got: Box::new(diagnostic),
+            },
+            Default::default,
+        );
+    }
 }
