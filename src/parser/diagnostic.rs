@@ -42,6 +42,18 @@ pub enum DiagnosticKind<'a> {
     },
     #[error("expected identifier, {got}")]
     ExpectedIdent { got: Box<DiagnosticKind<'a>> },
+
+    #[error("expected expression, {got}")]
+    ExpectedExpr { got: Box<DiagnosticKind<'a>> },
+
+    #[error("expected type, {got}")]
+    ExpectedTy { got: Box<DiagnosticKind<'a>> },
+
+    #[error("expected generic argument or closing ']', {got}")]
+    ExpectedGenericArgument { got: Box<DiagnosticKind<'a>> },
+
+    #[error("expected identifier or generic arguments, {got}")]
+    ExpectedSymbolPathPart { got: Box<DiagnosticKind<'a>> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

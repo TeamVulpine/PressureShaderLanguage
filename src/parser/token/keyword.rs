@@ -18,6 +18,7 @@ keywords! {
         Const = "const",
         Trait = "trait",
         Impl = "impl",
+        As = "as",
 
         // Values
         True = "true",

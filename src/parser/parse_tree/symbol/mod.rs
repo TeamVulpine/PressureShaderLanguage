@@ -1,18 +1,22 @@
 use crate::parser::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{MismatchHandling, expect_ident, try_ident, try_symbol},
+    parse_tree::{
+        symbol::{part::SymbolPathPart, start::SymbolPathStart, r#type::TypePart},
+        try_ident,
+    },
     source::Spanned,
-    token::{TokenKind, Tokenizer, ident::PseudoKeyword, symbol::Symbol},
+    token::Tokenizer,
 };
 
-#[derive(Debug)]
-pub enum SymbolPathPart {
-    Ident(Option<PseudoKeyword>),
-}
+pub mod generic;
+pub mod part;
+pub mod start;
+pub mod r#type;
 
 #[derive(Debug)]
 pub struct SymbolPath<'a> {
-    pub values: Box<[Spanned<'a, SymbolPathPart>]>,
+    pub first: Box<Spanned<'a, SymbolPathStart<'a>>>,
+    pub parts: Box<[Spanned<'a, SymbolPathPart<'a>>]>,
 }
 
 impl<'a> SymbolPath<'a> {
@@ -21,34 +25,23 @@ impl<'a> SymbolPath<'a> {
         diagnostics: &mut Diagnostics<'a>,
         lenient_generic_separation: bool,
     ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
-        let mut values = vec![];
-
-        let Some(first) = try_ident(tokenizer, diagnostics) else {
+        let Some(first) = SymbolPathStart::try_parse(tokenizer, diagnostics)? else {
             return Ok(None);
         };
 
-        values.push(first.map(SymbolPathPart::Ident));
+        let parts = SymbolPathPart::try_many(tokenizer, diagnostics, lenient_generic_separation)?;
 
-        while let Some(_) = try_symbol(tokenizer, diagnostics, Symbol::DoubleColon) {
-            let Some(ident) = expect_ident(
-                tokenizer,
-                diagnostics,
-                MismatchHandling::SkipTo(&[
-                    TokenKind::Symbol(Symbol::Semicolon),
-                    TokenKind::Symbol(Symbol::BracketClose),
-                ]),
-            )?
-            else {
-                break;
-            };
+        let (parts_span, parts) = if let Some(parts) = parts {
+            (parts.span, parts.value)
+        } else {
+            (first.span, Default::default())
+        };
 
-            values.push(ident.map(SymbolPathPart::Ident));
-        }
-
-        let span = values.first().unwrap().span + values.last().unwrap().span;
+        let span = first.span + parts_span;
 
         return Ok(Some(span.into_spanned(Self {
-            values: values.into(),
+            first: Box::new(first),
+            parts,
         })));
     }
 }

@@ -1,6 +1,15 @@
 use crate::parser::{
-    diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::expr::{atom::AtomExpr, operator::OperationExpr},
+    diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
+    parse_tree::{
+        MismatchHandling, expect_parse,
+        expr::{
+            atom::AtomExpr,
+            operator::{
+                infix::InfixOperationExpr, postfix::PostfixOperationExpr,
+                prefix::PrefixOperationExpr,
+            },
+        },
+    },
     source::Spanned,
     token::Tokenizer,
 };
@@ -8,9 +17,13 @@ use crate::parser::{
 pub mod atom;
 pub mod operator;
 
+#[derive(Debug)]
 pub enum Expr<'a> {
-    Operation(OperationExpr<'a>),
+    PostfixOperation(PostfixOperationExpr<'a>),
+    PrefixOperation(PrefixOperationExpr<'a>),
+    InfixOperation(InfixOperationExpr<'a>),
     Atom(AtomExpr<'a>),
+    Error,
 }
 
 impl<'a> Expr<'a> {
@@ -18,11 +31,23 @@ impl<'a> Expr<'a> {
         tokenizer: &mut Tokenizer<'a>,
         diagnostics: &mut Diagnostics<'a>,
     ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
-        let Some(atom) = AtomExpr::try_parse(tokenizer, diagnostics)? else {
-            return Ok(None);
-        };
+        return InfixOperationExpr::try_parse(tokenizer, diagnostics, 0);
+    }
 
-        // for now we just return the atom. I still need to implement the pratt parser.
-        return Ok(Some(atom.map(Expr::Atom)));
+    pub fn expect_parse(
+        tokenizer: &mut Tokenizer<'a>,
+        diagnostics: &mut Diagnostics<'a>,
+        mismatch_handling: MismatchHandling,
+    ) -> Result<Spanned<'a, Self>, FatalParsingError> {
+        return expect_parse(
+            tokenizer,
+            diagnostics,
+            mismatch_handling,
+            Self::try_parse,
+            |diagnostic| DiagnosticKind::ExpectedExpr {
+                got: Box::new(diagnostic),
+            },
+            || Self::Error,
+        );
     }
 }
