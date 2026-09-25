@@ -3,21 +3,18 @@ use crate::parser::{
     parse_tree::{
         MismatchHandling, expect_parse,
         expr::{Expr, operator::postfix::PostfixOperationExpr},
-        try_keyword, try_many_infallible, try_symbol,
+        try_many_infallible, try_symbol,
     },
     source::Spanned,
-    token::{Tokenizer, keyword::Keyword, symbol::Symbol},
+    token::{Tokenizer, symbol::Symbol},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PrefixOperator {
-    Positive,     // +
-    Negative,     // -
-    Dereference,  // *
-    Reference,    // &
-    ReferenceMut, // &mut
-    Not,          // !
-    BitwiseNot,   // ~
+    Positive,   // +
+    Negative,   // -
+    Not,        // !
+    BitwiseNot, // ~
 }
 
 #[derive(Debug)]
@@ -34,8 +31,6 @@ impl PrefixOperator {
         const MAPPING: &[(Symbol, PrefixOperator)] = &[
             (Symbol::Add, PrefixOperator::Positive),
             (Symbol::Subtract, PrefixOperator::Negative),
-            (Symbol::Multiply, PrefixOperator::Dereference),
-            (Symbol::BitwiseAnd, PrefixOperator::Reference),
             (Symbol::Not, PrefixOperator::Not),
             (Symbol::BitwiseNot, PrefixOperator::BitwiseNot),
         ];
@@ -44,12 +39,6 @@ impl PrefixOperator {
             let Some(span) = try_symbol(tokenizer, diagnostics, *symbol) else {
                 continue;
             };
-
-            if *operator == Self::Reference
-                && let Some(end) = try_keyword(tokenizer, diagnostics, Keyword::Mut)
-            {
-                return Some((span + end).into_spanned(Self::ReferenceMut));
-            }
 
             return Some(span.into_spanned(*operator));
         }

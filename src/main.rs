@@ -1,7 +1,5 @@
 use pressure_shader_language::parser::{
-    diagnostic::Diagnostics,
-    parse_tree::{expr::Expr, ty::Ty},
-    token::Tokenizer,
+    diagnostic::Diagnostics, parse_tree::expr::Expr, token::Tokenizer,
 };
 
 fn main() {

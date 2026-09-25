@@ -14,11 +14,16 @@ keywords! {
         Enum = "enum",
         Let = "let",
         Static = "static",
-        Mut = "mut",
         Const = "const",
         Trait = "trait",
         Impl = "impl",
+
+        // Modifiers
+        Mut = "mut",
         As = "as",
+        Out = "out",
+        In = "in",
+        InOut = "inout",
 
         // Values
         True = "true",

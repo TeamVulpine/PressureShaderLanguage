@@ -1,22 +1,16 @@
 use crate::parser::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_parse,
-        symbol::SymbolPath,
-        ty::{reference::ReferenceTy, slice::SliceTy},
-    },
+    parse_tree::{MismatchHandling, expect_parse, symbol::SymbolPath, ty::slice::SliceTy},
     source::Spanned,
     token::Tokenizer,
 };
 
-pub mod reference;
 pub mod slice;
 
 #[derive(Debug)]
 pub enum Ty<'a> {
     Symbol(SymbolPath<'a>),
     Slice(SliceTy<'a>),
-    Reference(ReferenceTy<'a>),
     Error,
 }
 
@@ -31,10 +25,6 @@ impl<'a> Ty<'a> {
 
         if let Some(slice) = SliceTy::try_parse(tokenizer, diagnostics)? {
             return Ok(Some(slice.map(Self::Slice)));
-        }
-
-        if let Some(reference) = ReferenceTy::try_parse(tokenizer, diagnostics)? {
-            return Ok(Some(reference.map(Self::Reference)));
         }
 
         return Ok(None);
