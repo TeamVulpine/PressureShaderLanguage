@@ -21,9 +21,6 @@ keywords! {
         // Modifiers
         Mut = "mut",
         As = "as",
-        Out = "out",
-        In = "in",
-        InOut = "inout",
 
         // Values
         True = "true",
