@@ -1,11 +1,11 @@
-use pawkit_interner::InternString;
-use pressure_shader_language::{
+use libpsi::{
     diagnostic::Diagnostics,
     library::builder::LibraryBuilder,
     module_cache::ModuleCache,
     parser::{parse_tree::expr::Expr, token::Tokenizer},
     report::IntoReport,
 };
+use pawkit_interner::InternString;
 
 fn main() {
     let library = LibraryBuilder::new()

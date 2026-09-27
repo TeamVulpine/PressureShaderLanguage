@@ -47,6 +47,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
+name = "libpsi"
+version = "0.1.0"
+dependencies = [
+ "pawkit-interner",
+ "thiserror",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -82,14 +90,6 @@ checksum = "c98c4e78d484a4c05e0aae1ca65f4d9fd931e599dc372c4ce17af5b63bef7c6b"
 dependencies = [
  "dashmap",
  "serde",
-]
-
-[[package]]
-name = "pressure-shader-language"
-version = "0.1.0"
-dependencies = [
- "pawkit-interner",
- "thiserror",
 ]
 
 [[package]]
