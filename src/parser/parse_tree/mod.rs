@@ -8,8 +8,8 @@ use crate::{
 };
 
 pub mod expr;
-mod symbol;
-mod ty;
+pub mod symbol;
+pub mod ty;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MismatchHandling {
