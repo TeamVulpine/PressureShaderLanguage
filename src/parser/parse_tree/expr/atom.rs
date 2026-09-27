@@ -1,9 +1,6 @@
 use crate::parser::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_symbol, expr::Expr, symbol::SymbolPath, try_keyword, try_number,
-        try_symbol,
-    },
+    parse_tree::{TupleResult, expr::Expr, symbol::SymbolPath, try_keyword, try_number, try_tuple},
     source::Spanned,
     token::{Tokenizer, keyword::Keyword, number::NumberLiteral, symbol::Symbol},
 };
@@ -13,6 +10,7 @@ pub enum AtomExpr<'a> {
     Number(NumberLiteral),
     Boolean(bool),
     Symbol(SymbolPath<'a>),
+    Tuple(Box<[Spanned<'a, Expr<'a>>]>),
 }
 
 impl<'a> AtomExpr<'a> {
@@ -38,18 +36,20 @@ impl<'a> AtomExpr<'a> {
             ));
         }
 
-        if let Some(start) = try_symbol(tokenizer, diagnostics, Symbol::ParenOpen) {
-            let expr =
-                Expr::expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
-
-            let end = expect_symbol(
-                tokenizer,
-                diagnostics,
-                Symbol::ParenClose,
-                MismatchHandling::Consume,
-            )?;
-
-            return Ok(Some((start + end).into_spanned(expr.value)));
+        if let Some(result) = try_tuple(
+            tokenizer,
+            diagnostics,
+            Expr::expect_parse,
+            Symbol::ParenOpen,
+            Symbol::ParenClose,
+            Symbol::Comma,
+        )? {
+            match result {
+                TupleResult::Parenthesized(expr) => return Ok(Some(expr)),
+                TupleResult::Tuple(exprs) => {
+                    return Ok(Some(exprs.map(Self::Tuple).map(Expr::Atom)));
+                }
+            }
         }
 
         return Ok(None);

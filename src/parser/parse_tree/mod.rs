@@ -8,8 +8,8 @@ use crate::parser::{
 };
 
 pub mod expr;
-pub mod symbol;
-pub mod ty;
+mod symbol;
+mod ty;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MismatchHandling {
@@ -139,10 +139,7 @@ impl MismatchHandling {
     }
 }
 
-pub fn peek_token<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
-) -> Token<'a> {
+fn peek_token<'a>(tokenizer: &mut Tokenizer<'a>, diagnostics: &mut Diagnostics<'a>) -> Token<'a> {
     loop {
         match tokenizer.peek() {
             Ok(it) => return it,
@@ -155,7 +152,7 @@ pub fn peek_token<'a>(
     }
 }
 
-pub fn peek_symbol<'a>(
+fn peek_symbol<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     symbol: Symbol,
@@ -169,7 +166,7 @@ pub fn peek_symbol<'a>(
     return None;
 }
 
-pub fn try_ident<'a>(
+fn try_ident<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
 ) -> Option<Spanned<'a, Option<PseudoKeyword>>> {
@@ -184,7 +181,7 @@ pub fn try_ident<'a>(
     return Some(token.span.into_spanned(pseudo));
 }
 
-pub fn try_number<'a>(
+fn try_number<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
 ) -> Option<Spanned<'a, NumberLiteral>> {
@@ -199,7 +196,7 @@ pub fn try_number<'a>(
     return Some(token.span.into_spanned(number));
 }
 
-pub fn expect_ident<'a>(
+fn expect_ident<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     mismatch_handling: MismatchHandling,
@@ -225,7 +222,7 @@ pub fn expect_ident<'a>(
     return Ok(token.span.into_spanned(pseudo));
 }
 
-pub fn try_token<'a>(
+fn try_token<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     expected_token: TokenKind,
@@ -240,7 +237,7 @@ pub fn try_token<'a>(
     return None;
 }
 
-pub fn try_symbol<'a>(
+fn try_symbol<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     symbol: Symbol,
@@ -248,7 +245,7 @@ pub fn try_symbol<'a>(
     return try_token(tokenizer, diagnostics, TokenKind::Symbol(symbol));
 }
 
-pub fn try_keyword<'a>(
+fn try_keyword<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     keyword: Keyword,
@@ -256,7 +253,7 @@ pub fn try_keyword<'a>(
     return try_token(tokenizer, diagnostics, TokenKind::Keyword(keyword));
 }
 
-pub fn try_pseudo_keyword<'a>(
+fn try_pseudo_keyword<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     keyword: PseudoKeyword,
@@ -264,7 +261,7 @@ pub fn try_pseudo_keyword<'a>(
     return try_token(tokenizer, diagnostics, TokenKind::Identifier(Some(keyword)));
 }
 
-pub fn expect_parse<'a, T>(
+fn expect_parse<'a, T>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     mismatch_handling: MismatchHandling,
@@ -291,7 +288,7 @@ pub fn expect_parse<'a, T>(
     return Ok(result);
 }
 
-pub fn expect_token<'a>(
+fn expect_token<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     expected_token: TokenKind,
@@ -317,7 +314,7 @@ pub fn expect_token<'a>(
     return Ok(token.span);
 }
 
-pub fn expect_symbol<'a>(
+fn expect_symbol<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     symbol: Symbol,
@@ -335,7 +332,7 @@ pub fn expect_symbol<'a>(
     );
 }
 
-pub fn expect_keyword<'a>(
+fn expect_keyword<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     keyword: Keyword,
@@ -353,7 +350,7 @@ pub fn expect_keyword<'a>(
     );
 }
 
-pub fn expect_pseudo_keyword<'a>(
+fn expect_pseudo_keyword<'a>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     keyword: PseudoKeyword,
@@ -371,7 +368,7 @@ pub fn expect_pseudo_keyword<'a>(
     );
 }
 
-pub fn try_list<'a, T>(
+fn try_list<'a, T>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     expect_parse: impl Fn(
@@ -418,7 +415,81 @@ pub fn try_list<'a, T>(
     }
 }
 
-pub fn try_many<'a, T>(
+enum TupleResult<'a, T> {
+    Parenthesized(Spanned<'a, T>),
+    Tuple(Spanned<'a, Box<[Spanned<'a, T>]>>),
+}
+
+fn try_tuple<'a, T>(
+    tokenizer: &mut Tokenizer<'a>,
+    diagnostics: &mut Diagnostics<'a>,
+    expect_parse: impl Fn(
+        &mut Tokenizer<'a>,
+        &mut Diagnostics<'a>,
+        MismatchHandling,
+    ) -> Result<Spanned<'a, T>, FatalParsingError>,
+    starting_symbol: Symbol,
+    closing_symbol: Symbol,
+    delimiter: Symbol,
+) -> Result<Option<TupleResult<'a, T>>, FatalParsingError> {
+    let Some(start) = try_symbol(tokenizer, diagnostics, starting_symbol) else {
+        return Ok(None);
+    };
+
+    if let Some(end) = try_symbol(tokenizer, diagnostics, closing_symbol) {
+        return Ok(Some(TupleResult::Tuple(
+            (start + end).into_spanned(Box::new([])),
+        )));
+    }
+
+    let first = expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
+
+    let Some(_) = try_symbol(tokenizer, diagnostics, delimiter) else {
+        let end = expect_symbol(
+            tokenizer,
+            diagnostics,
+            closing_symbol,
+            MismatchHandling::Consume,
+        )?;
+
+        return Ok(Some(TupleResult::Parenthesized(
+            (start + end).into_spanned(first.value),
+        )));
+    };
+
+    let mut values = vec![first];
+
+    loop {
+        if let Some(end) = try_symbol(tokenizer, diagnostics, closing_symbol) {
+            return Ok(Some(TupleResult::Tuple(
+                (start + end).into_spanned(values.into()),
+            )));
+        }
+
+        values.push(expect_parse(
+            tokenizer,
+            diagnostics,
+            MismatchHandling::ConsumeUntilSafe,
+        )?);
+
+        if try_symbol(tokenizer, diagnostics, delimiter).is_some() {
+            continue;
+        }
+
+        let end = expect_symbol(
+            tokenizer,
+            diagnostics,
+            closing_symbol,
+            MismatchHandling::Consume,
+        )?;
+
+        return Ok(Some(TupleResult::Tuple(
+            (start + end).into_spanned(values.into()),
+        )));
+    }
+}
+
+fn try_many<'a, T>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     try_parse: impl Fn(
@@ -447,7 +518,7 @@ pub fn try_many<'a, T>(
     return Ok(Some(span.into_spanned(values.into())));
 }
 
-pub fn try_many_infallible<'a, T>(
+fn try_many_infallible<'a, T>(
     tokenizer: &mut Tokenizer<'a>,
     diagnostics: &mut Diagnostics<'a>,
     try_parse: impl Fn(&mut Tokenizer<'a>, &mut Diagnostics<'a>) -> Option<Spanned<'a, T>>,

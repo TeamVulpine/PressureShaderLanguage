@@ -1,0 +1,47 @@
+from "engine:common/oklab" use oklab_to_rgb;
+
+from "engine:binding/frame" use FrameParams;
+from "engine:binding/sprite" use SpriteParams;
+from "engine:binding/block_model" use BlockModelParams;
+from "engine:binding/chunk" use ChunkParams;
+
+struct VertexOut {
+    #[builtin(position)]
+    pos: f32vec4,
+    uv: f32vec2,
+    sprite_index: u32,
+}
+
+fn vs_main(
+    #[builtin(vertex_index)]
+    vertex_index: u32,
+) -> VertexOut {
+    let chunk_quad = ChunkParams::quads[vertex_index >> 2];
+    let model_quad = BlockModelParams::quads[chunk_quad.index];
+  
+    return VertexOut {
+        pos: FrameParams::project_pos(FrameParams::localize_pos(model_quad.positions[vertex_index & 3])),
+
+        uv: model_quad.uvs[vertex_index & 3],
+        sprite_index: model_quad.sprite_index
+    };
+}
+
+fn fs_main(
+    input: VertexOut,
+) -> f32vec4 {
+  let color = SpriteParams::sample(input.sprite_index, input.uv);
+  
+  return f32vec4::from_vec3(oklab_to_rgb(color.xyz), color.w);
+}
+
+pipeline ChunkPipeline : raster {
+    param FrameParams : 0;
+    param SpriteParams : 1;
+    param BlockModelParams : 2;
+    param ChunkParams : 3;
+
+    vertex vs_main;
+
+    fragment fs_main;
+}

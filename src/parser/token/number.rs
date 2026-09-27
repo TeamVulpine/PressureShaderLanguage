@@ -193,9 +193,7 @@ impl NumberLiteral {
                 });
             };
 
-            if !cursor.is_char('.') {
-                return Ok(None);
-            }
+            return Ok(None);
         };
 
         let IntegerBase::Decimal = base else {
