@@ -17,6 +17,9 @@ keywords! {
         Const = "const",
         Trait = "trait",
         Impl = "impl",
+        Pipeline = "pipeline",
+        Param = "param",
+        Bitfield = "bitfield",
 
         // Modifiers
         Mut = "mut",

@@ -1,34 +1,36 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_ident, expect_parse, expect_symbol,
-        expr::{Expr, atom::AtomExpr},
-        symbol::generic::GenericArgument,
-        try_many, try_symbol,
+    parser::{
+        parse_tree::{
+            MismatchHandling, expect_ident, expect_parse, expect_symbol,
+            expr::{Expr, atom::AtomExpr},
+            symbol::generic::GenericArgument,
+            try_many, try_symbol,
+        },
+        token::{Tokenizer, ident::PseudoKeyword, symbol::Symbol},
     },
     source::Spanned,
-    token::{Tokenizer, ident::PseudoKeyword, symbol::Symbol},
 };
 
 #[derive(Debug)]
-pub enum PostfixOperator<'a> {
+pub enum PostfixOperator {
     Field(Option<PseudoKeyword>),
-    Invoke(Box<[Spanned<'a, Expr<'a>>]>),
-    Access(Box<Expr<'a>>),
-    Generics(Box<[Spanned<'a, GenericArgument<'a>>]>),
+    Invoke(Box<[Spanned<Expr>]>),
+    Access(Box<Expr>),
+    Generics(Box<[Spanned<GenericArgument>]>),
 }
 
 #[derive(Debug)]
-pub struct PostfixOperationExpr<'a> {
-    pub operand: Box<Spanned<'a, Expr<'a>>>,
-    pub operators: Spanned<'a, Box<[Spanned<'a, PostfixOperator<'a>>]>>,
+pub struct PostfixOperationExpr {
+    pub operand: Box<Spanned<Expr>>,
+    pub operators: Spanned<Box<[Spanned<PostfixOperator>]>>,
 }
 
-impl<'a> PostfixOperator<'a> {
+impl PostfixOperator {
     fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         if let Some(start) = try_symbol(tokenizer, diagnostics, Symbol::Dot) {
             let ident = expect_ident(tokenizer, diagnostics, MismatchHandling::Consume)?;
 
@@ -73,18 +75,18 @@ impl<'a> PostfixOperator<'a> {
     }
 
     pub fn try_many(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Box<[Spanned<'a, Self>]>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Box<[Spanned<Self>]>>>, FatalParsingError> {
         return try_many(tokenizer, diagnostics, Self::try_parse);
     }
 }
 
-impl<'a> PostfixOperationExpr<'a> {
+impl PostfixOperationExpr {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Expr<'a>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Expr>>, FatalParsingError> {
         let Some(expr) = AtomExpr::try_parse(tokenizer, diagnostics)? else {
             return Ok(None);
         };
@@ -102,10 +104,10 @@ impl<'a> PostfixOperationExpr<'a> {
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Expr<'a>>, FatalParsingError> {
+    ) -> Result<Spanned<Expr>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,

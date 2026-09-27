@@ -1,22 +1,24 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{MismatchHandling, expect_parse, expr::Expr, try_keyword, try_list, ty::Ty},
+    parser::{
+        parse_tree::{MismatchHandling, expect_parse, expr::Expr, try_keyword, try_list, ty::Ty},
+        token::{Tokenizer, keyword::Keyword, symbol::Symbol},
+    },
     source::Spanned,
-    token::{Tokenizer, keyword::Keyword, symbol::Symbol},
 };
 
 #[derive(Debug)]
-pub enum GenericArgument<'a> {
-    Ty(Spanned<'a, Ty<'a>>),
-    Const(Spanned<'a, Expr<'a>>),
+pub enum GenericArgument {
+    Ty(Spanned<Ty>),
+    Const(Spanned<Expr>),
     Error,
 }
 
-impl<'a> GenericArgument<'a> {
+impl GenericArgument {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         if let Some(start) = try_keyword(tokenizer, diagnostics, Keyword::Const) {
             let expr =
                 Expr::expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
@@ -32,10 +34,10 @@ impl<'a> GenericArgument<'a> {
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Self>, FatalParsingError> {
+    ) -> Result<Spanned<Self>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,
@@ -49,9 +51,9 @@ impl<'a> GenericArgument<'a> {
     }
 
     pub fn try_list(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Box<[Spanned<'a, Self>]>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Box<[Spanned<Self>]>>>, FatalParsingError> {
         return try_list(
             tokenizer,
             diagnostics,
@@ -64,10 +66,10 @@ impl<'a> GenericArgument<'a> {
     }
 
     pub fn expect_list(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Box<[Spanned<'a, Self>]>>, FatalParsingError> {
+    ) -> Result<Spanned<Box<[Spanned<Self>]>>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,

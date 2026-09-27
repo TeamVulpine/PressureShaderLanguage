@@ -1,12 +1,14 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_parse,
-        expr::{Expr, operator::cast::CastOperationExpression},
-        peek_symbol,
+    parser::{
+        parse_tree::{
+            MismatchHandling, expect_parse,
+            expr::{Expr, operator::cast::CastOperationExpression},
+            peek_symbol,
+        },
+        token::{Tokenizer, symbol::Symbol},
     },
     source::Spanned,
-    token::{Tokenizer, symbol::Symbol},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -53,9 +55,9 @@ enum InfixOperatorPrecedence {
 }
 
 #[derive(Debug)]
-pub struct InfixOperationExpr<'a> {
-    pub operands: Box<[Spanned<'a, Expr<'a>>; 2]>,
-    pub operator: Spanned<'a, InfixOperator>,
+pub struct InfixOperationExpr {
+    pub operands: Box<[Spanned<Expr>; 2]>,
+    pub operator: Spanned<InfixOperator>,
 }
 
 impl InfixOperator {
@@ -86,10 +88,10 @@ impl InfixOperator {
         return self.precedence().binding_power();
     }
 
-    pub fn peek_parse<'a>(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Option<Spanned<'a, Self>> {
+    pub fn peek_parse(
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Option<Spanned<Self>> {
         const MAPPING: &[(Symbol, InfixOperator)] = &[
             (Symbol::Add, InfixOperator::Add),
             (Symbol::Subtract, InfixOperator::Sub),
@@ -131,12 +133,12 @@ impl InfixOperatorPrecedence {
     }
 }
 
-impl<'a> InfixOperationExpr<'a> {
+impl InfixOperationExpr {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         min_binding: u8,
-    ) -> Result<Option<Spanned<'a, Expr<'a>>>, FatalParsingError> {
+    ) -> Result<Option<Spanned<Expr>>, FatalParsingError> {
         let Some(mut lhs) = CastOperationExpression::try_parse(tokenizer, diagnostics)? else {
             return Ok(None);
         };
@@ -173,11 +175,11 @@ impl<'a> InfixOperationExpr<'a> {
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
         min_binding: u8,
-    ) -> Result<Spanned<'a, Expr<'a>>, FatalParsingError> {
+    ) -> Result<Spanned<Expr>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,

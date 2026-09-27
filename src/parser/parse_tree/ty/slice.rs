@@ -1,21 +1,23 @@
-use crate::parser::{
+use crate::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{MismatchHandling, expect_symbol, expr::Expr, try_symbol, ty::Ty},
+    parser::{
+        parse_tree::{MismatchHandling, expect_symbol, expr::Expr, try_symbol, ty::Ty},
+        token::{Tokenizer, symbol::Symbol},
+    },
     source::Spanned,
-    token::{Tokenizer, symbol::Symbol},
 };
 
 #[derive(Debug)]
-pub struct SliceTy<'a> {
-    pub base: Box<Spanned<'a, Ty<'a>>>,
-    pub len: Option<Spanned<'a, Expr<'a>>>,
+pub struct SliceTy {
+    pub base: Box<Spanned<Ty>>,
+    pub len: Option<Spanned<Expr>>,
 }
 
-impl<'a> SliceTy<'a> {
+impl SliceTy {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         let Some(start) = try_symbol(tokenizer, diagnostics, Symbol::BracketOpen) else {
             return Ok(None);
         };

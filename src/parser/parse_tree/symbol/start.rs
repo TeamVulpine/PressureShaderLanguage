@@ -1,21 +1,23 @@
-use crate::parser::{
+use crate::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{symbol::r#type::TypePart, try_ident},
+    parser::{
+        parse_tree::{symbol::ty::TypePart, try_ident},
+        token::{Tokenizer, ident::PseudoKeyword},
+    },
     source::Spanned,
-    token::{Tokenizer, ident::PseudoKeyword},
 };
 
 #[derive(Debug)]
-pub enum SymbolPathStart<'a> {
+pub enum SymbolPathStart {
     Ident(Option<PseudoKeyword>),
-    Type(TypePart<'a>),
+    Type(TypePart),
 }
 
-impl<'a> SymbolPathStart<'a> {
+impl SymbolPathStart {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         if let Some(ident) = try_ident(tokenizer, diagnostics) {
             return Ok(Some(ident.map(Self::Ident)));
         }

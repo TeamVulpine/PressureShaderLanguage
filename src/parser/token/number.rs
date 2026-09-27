@@ -1,8 +1,8 @@
 use std::num::NonZeroU32;
 
-use crate::parser::{
+use crate::{
+    parser::token::{TokenError, TokenErrorKind},
     source::{SourceCursor, SourceSpan},
-    token::{TokenError, TokenErrorKind},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -71,16 +71,16 @@ impl IntegerBase {
 }
 
 impl NumberLiteral {
-    pub fn decompose<'a>(&self, span: &SourceSpan<'a>) -> (&'a str, Option<NumberSuffixKind>) {
-        let Some(suffix) = self.suffix else {
-            return (span.slice(), None);
-        };
+    // pub fn decompose<'a>(&self, span: &SourceSpan<'a>) -> (&'a str, Option<NumberSuffixKind>) {
+    //     let Some(suffix) = self.suffix else {
+    //         return (span.slice(), None);
+    //     };
 
-        return (
-            &span.slice()[..suffix.start.get() as usize],
-            Some(suffix.kind),
-        );
-    }
+    //     return (
+    //         &span.slice()[..suffix.start.get() as usize],
+    //         Some(suffix.kind),
+    //     );
+    // }
 
     fn parse_base(cursor: &mut SourceCursor) -> IntegerBase {
         if cursor.consume_str("0b") {
@@ -117,7 +117,7 @@ impl NumberLiteral {
     fn parse_digits<'a>(
         cursor: &mut SourceCursor<'a>,
         base: IntegerBase,
-    ) -> Result<bool, TokenError<'a>> {
+    ) -> Result<bool, TokenError> {
         let matcher = {
             if let IntegerBase::Binary = base {
                 Self::is_binary_digit
@@ -139,7 +139,7 @@ impl NumberLiteral {
 
             if cursor.while_char('_') && !cursor.is_fn(matcher) {
                 return Err(TokenError {
-                    span: cursor.commit(),
+                    span: cursor.commit().0,
                     kind: TokenErrorKind::NumberTrailingUnderscore,
                 });
             }
@@ -180,7 +180,7 @@ impl NumberLiteral {
         return None;
     }
 
-    pub fn parse<'a>(cursor: &mut SourceCursor<'a>) -> Result<Option<Self>, TokenError<'a>> {
+    pub fn parse<'a>(cursor: &mut SourceCursor<'a>) -> Result<Option<Self>, TokenError> {
         let base = Self::parse_base(cursor);
 
         let parsed_whole = Self::parse_digits(cursor, base)?;
@@ -188,7 +188,7 @@ impl NumberLiteral {
         if !parsed_whole {
             let IntegerBase::Decimal = base else {
                 return Err(TokenError {
-                    span: cursor.commit(),
+                    span: cursor.commit().0,
                     kind: TokenErrorKind::ExpectedDigits,
                 });
             };
@@ -225,7 +225,7 @@ impl NumberLiteral {
 
             if !Self::parse_digits(cursor, IntegerBase::Decimal)? {
                 return Err(TokenError {
-                    span: cursor.commit(),
+                    span: cursor.commit().0,
                     kind: TokenErrorKind::ExpectedExponentDigits,
                 });
             }

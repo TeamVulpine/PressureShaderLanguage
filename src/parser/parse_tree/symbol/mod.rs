@@ -1,30 +1,29 @@
-use crate::parser::{
+use crate::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{
-        symbol::{part::SymbolPathPart, start::SymbolPathStart, r#type::TypePart},
-        try_ident,
+    parser::{
+        parse_tree::symbol::{part::SymbolPathPart, start::SymbolPathStart},
+        token::Tokenizer,
     },
     source::Spanned,
-    token::Tokenizer,
 };
 
 pub mod generic;
 pub mod part;
 pub mod start;
-pub mod r#type;
+pub mod ty;
 
 #[derive(Debug)]
-pub struct SymbolPath<'a> {
-    pub first: Box<Spanned<'a, SymbolPathStart<'a>>>,
-    pub parts: Box<[Spanned<'a, SymbolPathPart<'a>>]>,
+pub struct SymbolPath {
+    pub first: Box<Spanned<SymbolPathStart>>,
+    pub parts: Box<[Spanned<SymbolPathPart>]>,
 }
 
-impl<'a> SymbolPath<'a> {
+impl SymbolPath {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         lenient_generic_separation: bool,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         let Some(first) = SymbolPathStart::try_parse(tokenizer, diagnostics)? else {
             return Ok(None);
         };

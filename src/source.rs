@@ -5,6 +5,8 @@ use std::{
     ops::Add,
 };
 
+use crate::module_cache::ModuleIndex;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SourcePos {
     line: NonZeroU32,
@@ -12,8 +14,8 @@ pub struct SourcePos {
 }
 
 pub struct SourceCursor<'a> {
-    file_path: Option<&'a str>,
     source: &'a str,
+    module_index: ModuleIndex,
 
     current_index: u32,
     current_pos: SourcePos,
@@ -23,18 +25,17 @@ pub struct SourceCursor<'a> {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub struct SourceSpan<'a> {
-    file_path: Option<&'a str>,
-    source: &'a str,
+pub struct SourceSpan {
+    module_index: ModuleIndex,
     span: (u32, u32),
     start_pos: SourcePos,
     end_pos: SourcePos,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Spanned<'a, T> {
+pub struct Spanned<T> {
     pub value: T,
-    pub span: SourceSpan<'a>,
+    pub span: SourceSpan,
 }
 
 impl SourcePos {
@@ -53,6 +54,14 @@ impl SourcePos {
             column: NonZeroU32::MIN,
         };
     }
+
+    pub const fn line(&self) -> NonZeroU32 {
+        return self.line;
+    }
+
+    pub const fn column(&self) -> NonZeroU32 {
+        return self.column;
+    }
 }
 
 impl Display for SourcePos {
@@ -62,10 +71,10 @@ impl Display for SourcePos {
 }
 
 impl<'a> SourceCursor<'a> {
-    pub fn new(source: &'a str, file_path: Option<&'a str>) -> Self {
+    pub fn new(source: &'a str, module_index: ModuleIndex) -> Self {
         return Self {
-            file_path,
             source,
+            module_index,
             current_index: 0,
             current_pos: SourcePos::new(),
             rollback_index: 0,
@@ -73,10 +82,9 @@ impl<'a> SourceCursor<'a> {
         };
     }
 
-    pub fn empty_span(&self) -> SourceSpan<'a> {
+    pub fn empty_span(&self) -> SourceSpan {
         return SourceSpan {
-            file_path: self.file_path,
-            source: self.source,
+            module_index: self.module_index,
             span: (0, 0),
             start_pos: SourcePos::new(),
             end_pos: SourcePos::new(),
@@ -177,7 +185,7 @@ impl<'a> SourceCursor<'a> {
     }
 
     #[must_use]
-    pub fn commit(&mut self) -> SourceSpan<'a> {
+    pub fn commit(&mut self) -> (SourceSpan, &'a str) {
         let span = (self.rollback_index, self.current_index);
         let start_pos = self.rollback_pos;
         let end_pos = self.current_pos;
@@ -185,13 +193,16 @@ impl<'a> SourceCursor<'a> {
         self.rollback_index = self.current_index;
         self.rollback_pos = self.current_pos;
 
-        return SourceSpan {
-            file_path: self.file_path,
-            source: self.source,
+        let source = &self.source[span.0 as usize..span.1 as usize];
+
+        let span = SourceSpan {
+            module_index: self.module_index,
             span,
             start_pos,
             end_pos,
         };
+
+        return (span, source);
     }
 
     pub fn rollback(&mut self) {
@@ -208,7 +219,7 @@ impl<'a> SourceCursor<'a> {
     }
 }
 
-impl<'a> SourceSpan<'a> {
+impl SourceSpan {
     pub fn start_pos(&self) -> SourcePos {
         return self.start_pos;
     }
@@ -217,25 +228,23 @@ impl<'a> SourceSpan<'a> {
         return self.end_pos;
     }
 
-    pub fn slice(&self) -> &'a str {
-        return &self.source[self.span.0 as usize..self.span.1 as usize];
+    pub fn module_index(&self) -> ModuleIndex {
+        return self.module_index;
     }
 
-    pub fn into_spanned<T>(&self, value: T) -> Spanned<'a, T> {
+    pub fn into_spanned<T>(&self, value: T) -> Spanned<T> {
         return Spanned { value, span: *self };
     }
 }
 
-impl<'a> Add for SourceSpan<'a> {
+impl Add for SourceSpan {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        assert_eq!(self.source, rhs.source);
-        assert_eq!(self.file_path, rhs.file_path);
+        assert_eq!(self.module_index, rhs.module_index);
 
         return Self {
-            file_path: self.file_path,
-            source: self.source,
+            module_index: self.module_index,
             span: (self.span.0.min(rhs.span.0), self.span.1.max(rhs.span.1)),
             start_pos: self.start_pos.min(rhs.start_pos),
             end_pos: self.end_pos.max(rhs.end_pos),
@@ -243,31 +252,24 @@ impl<'a> Add for SourceSpan<'a> {
     }
 }
 
-impl<'a, 'b> Sum<&'b SourceSpan<'a>> for Option<SourceSpan<'a>> {
-    fn sum<I: Iterator<Item = &'b SourceSpan<'a>>>(iter: I) -> Option<SourceSpan<'a>> {
+impl<'a> Sum<&'a SourceSpan> for Option<SourceSpan> {
+    fn sum<I: Iterator<Item = &'a SourceSpan>>(iter: I) -> Option<SourceSpan> {
         return iter.fold(None, |a, b| a.map(|it| it + *b).or_else(|| Some(*b)));
     }
 }
 
-impl<'a> Debug for SourceSpan<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        return write!(f, "'{}'", self.slice().replace("\n", "\\n"));
-    }
-}
-
-impl<'a> Display for SourceSpan<'a> {
+impl Debug for SourceSpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         return write!(
             f,
-            "{}:{}",
-            self.file_path.unwrap_or("<dev console>"),
-            self.start_pos
+            "{:?}[{}..{}]",
+            self.module_index, self.span.0, self.span.1
         );
     }
 }
 
-impl<'a, T> Spanned<'a, T> {
-    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Spanned<'a, U> {
+impl<T> Spanned<T> {
+    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Spanned<U> {
         return Spanned {
             value: f(self.value),
             span: self.span,

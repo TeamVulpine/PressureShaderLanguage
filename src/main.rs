@@ -1,11 +1,21 @@
-use pressure_shader_language::parser::{
-    diagnostic::Diagnostics, parse_tree::expr::Expr, token::Tokenizer,
+use pawkit_interner::InternString;
+use pressure_shader_language::{
+    diagnostic::Diagnostics,
+    module_cache::ModuleCache,
+    parser::{parse_tree::expr::Expr, token::Tokenizer},
+    report::IntoReport,
 };
 
 fn main() {
-    let contents = std::fs::read_to_string("test.psi").unwrap();
+    let contents = InternString::from(std::fs::read_to_string("test.psi").unwrap());
 
-    let mut tokenizer = Tokenizer::new(&contents, Some("test.psi"));
+    let mut cache = ModuleCache::new();
+
+    let index = cache
+        .insert(InternString::new("test.psi"), contents.clone())
+        .unwrap();
+
+    let mut tokenizer = Tokenizer::new(&contents, index);
     let mut diagnostics = Diagnostics::new();
 
     let path = Expr::try_parse(&mut tokenizer, &mut diagnostics).unwrap();
@@ -13,6 +23,6 @@ fn main() {
     println!("{:?}", path);
 
     for diagnostic in diagnostics.into_iter() {
-        println!("{}", diagnostic);
+        println!("{}", diagnostic.into_report().render(&cache));
     }
 }

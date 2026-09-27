@@ -1,12 +1,14 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_parse,
-        expr::{Expr, operator::postfix::PostfixOperationExpr},
-        try_many_infallible, try_symbol,
+    parser::{
+        parse_tree::{
+            MismatchHandling, expect_parse,
+            expr::{Expr, operator::postfix::PostfixOperationExpr},
+            try_many_infallible, try_symbol,
+        },
+        token::{Tokenizer, symbol::Symbol},
     },
     source::Spanned,
-    token::{Tokenizer, symbol::Symbol},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -18,16 +20,16 @@ pub enum PrefixOperator {
 }
 
 #[derive(Debug)]
-pub struct PrefixOperationExpr<'a> {
-    pub operand: Box<Spanned<'a, Expr<'a>>>,
-    pub operators: Spanned<'a, Box<[Spanned<'a, PrefixOperator>]>>,
+pub struct PrefixOperationExpr {
+    pub operand: Box<Spanned<Expr>>,
+    pub operators: Spanned<Box<[Spanned<PrefixOperator>]>>,
 }
 
 impl PrefixOperator {
-    pub fn try_parse<'a>(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Option<Spanned<'a, Self>> {
+    pub fn try_parse(
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Option<Spanned<Self>> {
         const MAPPING: &[(Symbol, PrefixOperator)] = &[
             (Symbol::Add, PrefixOperator::Positive),
             (Symbol::Subtract, PrefixOperator::Negative),
@@ -47,11 +49,11 @@ impl PrefixOperator {
     }
 }
 
-impl<'a> PrefixOperationExpr<'a> {
+impl PrefixOperationExpr {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Expr<'a>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Expr>>, FatalParsingError> {
         let Some(operators) =
             try_many_infallible(tokenizer, diagnostics, PrefixOperator::try_parse)
         else {
@@ -73,10 +75,10 @@ impl<'a> PrefixOperationExpr<'a> {
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Expr<'a>>, FatalParsingError> {
+    ) -> Result<Spanned<Expr>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,

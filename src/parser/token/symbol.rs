@@ -14,7 +14,7 @@ macro_rules! symbols {
             }
 
             impl $t {
-                pub fn parse(cursor: &mut $crate::parser::source::SourceCursor) -> Option<Self> {
+                pub fn parse(cursor: &mut $crate::source::SourceCursor) -> Option<Self> {
                     $(
                         if cursor.consume_str($str) {
                             return Some(Self::$name);

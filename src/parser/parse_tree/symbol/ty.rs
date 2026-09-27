@@ -1,21 +1,23 @@
-use crate::parser::{
+use crate::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{MismatchHandling, expect_symbol, try_keyword, ty::Ty},
+    parser::{
+        parse_tree::{MismatchHandling, expect_symbol, try_keyword, ty::Ty},
+        token::{Tokenizer, keyword::Keyword, symbol::Symbol},
+    },
     source::Spanned,
-    token::{Tokenizer, keyword::Keyword, symbol::Symbol},
 };
 
 #[derive(Debug)]
-pub struct TypePart<'a> {
-    pub ty: Spanned<'a, Ty<'a>>,
-    pub as_ty: Option<Spanned<'a, Ty<'a>>>,
+pub struct TypePart {
+    pub ty: Spanned<Ty>,
+    pub as_ty: Option<Spanned<Ty>>,
 }
 
-impl<'a> TypePart<'a> {
+impl TypePart {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         let Some(start) = try_keyword(tokenizer, diagnostics, Keyword::Type) else {
             return Ok(None);
         };

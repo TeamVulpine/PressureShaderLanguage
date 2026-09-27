@@ -1,46 +1,48 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_parse,
-        expr::{
-            atom::AtomExpr,
-            operator::{
-                cast::CastOperationExpression, infix::InfixOperationExpr,
-                postfix::PostfixOperationExpr, prefix::PrefixOperationExpr,
+    parser::{
+        parse_tree::{
+            MismatchHandling, expect_parse,
+            expr::{
+                atom::AtomExpr,
+                operator::{
+                    cast::CastOperationExpression, infix::InfixOperationExpr,
+                    postfix::PostfixOperationExpr, prefix::PrefixOperationExpr,
+                },
             },
+            try_list,
         },
-        try_list,
+        token::{Tokenizer, symbol::Symbol},
     },
     source::Spanned,
-    token::{Tokenizer, symbol::Symbol},
 };
 
 pub mod atom;
 pub mod operator;
 
 #[derive(Debug)]
-pub enum Expr<'a> {
-    PostfixOperation(PostfixOperationExpr<'a>),
-    PrefixOperation(PrefixOperationExpr<'a>),
-    InfixOperation(InfixOperationExpr<'a>),
-    CastOperation(CastOperationExpression<'a>),
-    Atom(AtomExpr<'a>),
+pub enum Expr {
+    PostfixOperation(PostfixOperationExpr),
+    PrefixOperation(PrefixOperationExpr),
+    InfixOperation(InfixOperationExpr),
+    CastOperation(CastOperationExpression),
+    Atom(AtomExpr),
     Error,
 }
 
-impl<'a> Expr<'a> {
+impl Expr {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         return InfixOperationExpr::try_parse(tokenizer, diagnostics, 0);
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Self>, FatalParsingError> {
+    ) -> Result<Spanned<Self>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,
@@ -54,9 +56,9 @@ impl<'a> Expr<'a> {
     }
 
     pub fn try_list(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Box<[Spanned<'a, Self>]>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Box<[Spanned<Self>]>>>, FatalParsingError> {
         return try_list(
             tokenizer,
             diagnostics,

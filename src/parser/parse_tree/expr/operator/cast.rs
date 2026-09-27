@@ -1,31 +1,33 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, expect_parse,
-        expr::{Expr, operator::prefix::PrefixOperationExpr},
-        try_keyword, try_many,
-        ty::Ty,
+    parser::{
+        parse_tree::{
+            MismatchHandling, expect_parse,
+            expr::{Expr, operator::prefix::PrefixOperationExpr},
+            try_keyword, try_many,
+            ty::Ty,
+        },
+        token::{Tokenizer, keyword::Keyword},
     },
     source::Spanned,
-    token::{Tokenizer, keyword::Keyword},
 };
 
 #[derive(Debug)]
-pub struct CastOperator<'a> {
-    pub ty: Spanned<'a, Ty<'a>>,
+pub struct CastOperator {
+    pub ty: Spanned<Ty>,
 }
 
 #[derive(Debug)]
-pub struct CastOperationExpression<'a> {
-    pub expr: Box<Spanned<'a, Expr<'a>>>,
-    pub casts: Spanned<'a, Box<[Spanned<'a, CastOperator<'a>>]>>,
+pub struct CastOperationExpression {
+    pub expr: Box<Spanned<Expr>>,
+    pub casts: Spanned<Box<[Spanned<CastOperator>]>>,
 }
 
-impl<'a> CastOperator<'a> {
+impl CastOperator {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         let Some(start) = try_keyword(tokenizer, diagnostics, Keyword::As) else {
             return Ok(None);
         };
@@ -38,18 +40,18 @@ impl<'a> CastOperator<'a> {
     }
 
     pub fn try_many(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Box<[Spanned<'a, Self>]>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Box<[Spanned<Self>]>>>, FatalParsingError> {
         return try_many(tokenizer, diagnostics, Self::try_parse);
     }
 }
 
-impl<'a> CastOperationExpression<'a> {
+impl CastOperationExpression {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Expr<'a>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Expr>>, FatalParsingError> {
         let Some(expr) = PrefixOperationExpr::try_parse(tokenizer, diagnostics)? else {
             return Ok(None);
         };
@@ -67,10 +69,10 @@ impl<'a> CastOperationExpression<'a> {
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Expr<'a>>, FatalParsingError> {
+    ) -> Result<Spanned<Expr>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,

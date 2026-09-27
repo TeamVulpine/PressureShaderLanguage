@@ -1,23 +1,27 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{peek_token, symbol::generic::GenericArgument, try_ident, try_many, try_symbol},
+    parser::{
+        parse_tree::{
+            peek_token, symbol::generic::GenericArgument, try_ident, try_many, try_symbol,
+        },
+        token::{Tokenizer, ident::PseudoKeyword, symbol::Symbol},
+    },
     source::Spanned,
-    token::{Tokenizer, ident::PseudoKeyword, symbol::Symbol},
 };
 
 #[derive(Debug)]
-pub enum SymbolPathPart<'a> {
+pub enum SymbolPathPart {
     Ident(Option<PseudoKeyword>),
-    Generics(Box<[Spanned<'a, GenericArgument<'a>>]>),
+    Generics(Box<[Spanned<GenericArgument>]>),
     Error,
 }
 
-impl<'a> SymbolPathPart<'a> {
+impl SymbolPathPart {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         lenient_generic_separation: bool,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         if lenient_generic_separation
             && let Some(generics) = GenericArgument::try_list(tokenizer, diagnostics)?
         {
@@ -49,10 +53,10 @@ impl<'a> SymbolPathPart<'a> {
     }
 
     pub fn try_many(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         lenient_generic_separation: bool,
-    ) -> Result<Option<Spanned<'a, Box<[Spanned<'a, Self>]>>>, FatalParsingError> {
+    ) -> Result<Option<Spanned<Box<[Spanned<Self>]>>>, FatalParsingError> {
         return try_many(tokenizer, diagnostics, |tokenizer, diagnostics| {
             Self::try_parse(tokenizer, diagnostics, lenient_generic_separation)
         });

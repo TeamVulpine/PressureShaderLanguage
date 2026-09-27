@@ -1,10 +1,10 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    source::{SourceSpan, Spanned},
-    token::{
+    parser::token::{
         Token, TokenKind, Tokenizer, ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral,
         symbol::Symbol,
     },
+    source::{SourceSpan, Spanned},
 };
 
 pub mod expr;
@@ -50,11 +50,11 @@ impl RecurseToken {
 }
 
 impl MismatchHandling {
-    fn push_diagnostic<'a>(
+    fn push_diagnostic(
         &self,
-        diagnostics: &mut Diagnostics<'a>,
-        kind: DiagnosticKind<'a>,
-        span: SourceSpan<'a>,
+        diagnostics: &mut Diagnostics,
+        kind: DiagnosticKind,
+        span: SourceSpan,
     ) -> Result<(), FatalParsingError> {
         if let Self::Fatal = self {
             diagnostics.push_fatal(kind, span)?;
@@ -65,10 +65,10 @@ impl MismatchHandling {
         return Ok(());
     }
 
-    fn apply_mismatch<'a>(
+    fn apply_mismatch(
         &self,
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
     ) -> Result<(), FatalParsingError> {
         match self {
             Self::Consume => {
@@ -139,24 +139,24 @@ impl MismatchHandling {
     }
 }
 
-fn peek_token<'a>(tokenizer: &mut Tokenizer<'a>, diagnostics: &mut Diagnostics<'a>) -> Token<'a> {
+fn peek_token(tokenizer: &mut Tokenizer, diagnostics: &mut Diagnostics) -> Token {
     loop {
         match tokenizer.peek() {
             Ok(it) => return it,
             Err(err) => {
-                _ = tokenizer.next();
+                let span = err.span;
 
-                diagnostics.push_error(err.kind.into(), err.span);
+                diagnostics.push_error(DiagnosticKind::Token(err), span);
             }
         }
     }
 }
 
-fn peek_symbol<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn peek_symbol(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     symbol: Symbol,
-) -> Option<SourceSpan<'a>> {
+) -> Option<SourceSpan> {
     let token = peek_token(tokenizer, diagnostics);
 
     if token.kind == TokenKind::Symbol(symbol) {
@@ -166,10 +166,10 @@ fn peek_symbol<'a>(
     return None;
 }
 
-fn try_ident<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
-) -> Option<Spanned<'a, Option<PseudoKeyword>>> {
+fn try_ident(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+) -> Option<Spanned<Option<PseudoKeyword>>> {
     let token = peek_token(tokenizer, diagnostics);
 
     let TokenKind::Identifier(pseudo) = token.kind else {
@@ -181,10 +181,10 @@ fn try_ident<'a>(
     return Some(token.span.into_spanned(pseudo));
 }
 
-fn try_number<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
-) -> Option<Spanned<'a, NumberLiteral>> {
+fn try_number(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+) -> Option<Spanned<NumberLiteral>> {
     let token = peek_token(tokenizer, diagnostics);
 
     let TokenKind::NumberLiteral(number) = token.kind else {
@@ -196,11 +196,11 @@ fn try_number<'a>(
     return Some(token.span.into_spanned(number));
 }
 
-fn expect_ident<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn expect_ident(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     mismatch_handling: MismatchHandling,
-) -> Result<Spanned<'a, Option<PseudoKeyword>>, FatalParsingError> {
+) -> Result<Spanned<Option<PseudoKeyword>>, FatalParsingError> {
     let token = peek_token(tokenizer, diagnostics);
 
     let TokenKind::Identifier(pseudo) = token.kind else {
@@ -222,11 +222,11 @@ fn expect_ident<'a>(
     return Ok(token.span.into_spanned(pseudo));
 }
 
-fn try_token<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn try_token(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     expected_token: TokenKind,
-) -> Option<SourceSpan<'a>> {
+) -> Option<SourceSpan> {
     let token = peek_token(tokenizer, diagnostics);
 
     if token.kind == expected_token {
@@ -237,41 +237,41 @@ fn try_token<'a>(
     return None;
 }
 
-fn try_symbol<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn try_symbol(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     symbol: Symbol,
-) -> Option<SourceSpan<'a>> {
+) -> Option<SourceSpan> {
     return try_token(tokenizer, diagnostics, TokenKind::Symbol(symbol));
 }
 
-fn try_keyword<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn try_keyword(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     keyword: Keyword,
-) -> Option<SourceSpan<'a>> {
+) -> Option<SourceSpan> {
     return try_token(tokenizer, diagnostics, TokenKind::Keyword(keyword));
 }
 
-fn try_pseudo_keyword<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn try_pseudo_keyword(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     keyword: PseudoKeyword,
-) -> Option<SourceSpan<'a>> {
+) -> Option<SourceSpan> {
     return try_token(tokenizer, diagnostics, TokenKind::Identifier(Some(keyword)));
 }
 
 fn expect_parse<'a, T>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     mismatch_handling: MismatchHandling,
     try_parse: impl FnOnce(
-        &mut Tokenizer<'a>,
-        &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, T>>, FatalParsingError>,
-    produce_diagnostic: impl FnOnce(DiagnosticKind<'a>) -> DiagnosticKind<'a>,
+        &mut Tokenizer,
+        &mut Diagnostics,
+    ) -> Result<Option<Spanned<T>>, FatalParsingError>,
+    produce_diagnostic: impl FnOnce(DiagnosticKind) -> DiagnosticKind,
     produce_fallback: impl FnOnce() -> T,
-) -> Result<Spanned<'a, T>, FatalParsingError> {
+) -> Result<Spanned<T>, FatalParsingError> {
     let Some(result) = try_parse(tokenizer, diagnostics)? else {
         let token = peek_token(tokenizer, diagnostics);
         mismatch_handling.push_diagnostic(
@@ -288,13 +288,13 @@ fn expect_parse<'a, T>(
     return Ok(result);
 }
 
-fn expect_token<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn expect_token(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     expected_token: TokenKind,
     mismatch_handling: MismatchHandling,
-    produce_diagnostic: impl FnOnce(DiagnosticKind<'a>) -> DiagnosticKind<'a>,
-) -> Result<SourceSpan<'a>, FatalParsingError> {
+    produce_diagnostic: impl FnOnce(DiagnosticKind) -> DiagnosticKind,
+) -> Result<SourceSpan, FatalParsingError> {
     let token = peek_token(tokenizer, diagnostics);
 
     if token.kind == expected_token {
@@ -314,12 +314,12 @@ fn expect_token<'a>(
     return Ok(token.span);
 }
 
-fn expect_symbol<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn expect_symbol(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     symbol: Symbol,
     mismatch_handling: MismatchHandling,
-) -> Result<SourceSpan<'a>, FatalParsingError> {
+) -> Result<SourceSpan, FatalParsingError> {
     return expect_token(
         tokenizer,
         diagnostics,
@@ -332,12 +332,12 @@ fn expect_symbol<'a>(
     );
 }
 
-fn expect_keyword<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn expect_keyword(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     keyword: Keyword,
     mismatch_handling: MismatchHandling,
-) -> Result<SourceSpan<'a>, FatalParsingError> {
+) -> Result<SourceSpan, FatalParsingError> {
     return expect_token(
         tokenizer,
         diagnostics,
@@ -350,12 +350,12 @@ fn expect_keyword<'a>(
     );
 }
 
-fn expect_pseudo_keyword<'a>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn expect_pseudo_keyword(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     keyword: PseudoKeyword,
     mismatch_handling: MismatchHandling,
-) -> Result<SourceSpan<'a>, FatalParsingError> {
+) -> Result<SourceSpan, FatalParsingError> {
     return expect_token(
         tokenizer,
         diagnostics,
@@ -369,18 +369,18 @@ fn expect_pseudo_keyword<'a>(
 }
 
 fn try_list<'a, T>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     expect_parse: impl Fn(
-        &mut Tokenizer<'a>,
-        &mut Diagnostics<'a>,
+        &mut Tokenizer,
+        &mut Diagnostics,
         MismatchHandling,
-    ) -> Result<Spanned<'a, T>, FatalParsingError>,
+    ) -> Result<Spanned<T>, FatalParsingError>,
     starting_symbol: Symbol,
     closing_symbol: Symbol,
     delimiter: Symbol,
     allow_trailing: bool,
-) -> Result<Option<Spanned<'a, Box<[Spanned<'a, T>]>>>, FatalParsingError> {
+) -> Result<Option<Spanned<Box<[Spanned<T>]>>>, FatalParsingError> {
     let Some(start) = try_symbol(tokenizer, diagnostics, starting_symbol) else {
         return Ok(None);
     };
@@ -415,23 +415,23 @@ fn try_list<'a, T>(
     }
 }
 
-enum TupleResult<'a, T> {
-    Parenthesized(Spanned<'a, T>),
-    Tuple(Spanned<'a, Box<[Spanned<'a, T>]>>),
+enum TupleResult<T> {
+    Parenthesized(Spanned<T>),
+    Tuple(Spanned<Box<[Spanned<T>]>>),
 }
 
-fn try_tuple<'a, T>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+fn try_tuple<T>(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     expect_parse: impl Fn(
-        &mut Tokenizer<'a>,
-        &mut Diagnostics<'a>,
+        &mut Tokenizer,
+        &mut Diagnostics,
         MismatchHandling,
-    ) -> Result<Spanned<'a, T>, FatalParsingError>,
+    ) -> Result<Spanned<T>, FatalParsingError>,
     starting_symbol: Symbol,
     closing_symbol: Symbol,
     delimiter: Symbol,
-) -> Result<Option<TupleResult<'a, T>>, FatalParsingError> {
+) -> Result<Option<TupleResult<T>>, FatalParsingError> {
     let Some(start) = try_symbol(tokenizer, diagnostics, starting_symbol) else {
         return Ok(None);
     };
@@ -490,13 +490,13 @@ fn try_tuple<'a, T>(
 }
 
 fn try_many<'a, T>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
     try_parse: impl Fn(
-        &mut Tokenizer<'a>,
-        &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, T>>, FatalParsingError>,
-) -> Result<Option<Spanned<'a, Box<[Spanned<'a, T>]>>>, FatalParsingError> {
+        &mut Tokenizer,
+        &mut Diagnostics,
+    ) -> Result<Option<Spanned<T>>, FatalParsingError>,
+) -> Result<Option<Spanned<Box<[Spanned<T>]>>>, FatalParsingError> {
     let mut values = vec![];
 
     loop {
@@ -519,10 +519,10 @@ fn try_many<'a, T>(
 }
 
 fn try_many_infallible<'a, T>(
-    tokenizer: &mut Tokenizer<'a>,
-    diagnostics: &mut Diagnostics<'a>,
-    try_parse: impl Fn(&mut Tokenizer<'a>, &mut Diagnostics<'a>) -> Option<Spanned<'a, T>>,
-) -> Option<Spanned<'a, Box<[Spanned<'a, T>]>>> {
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+    try_parse: impl Fn(&mut Tokenizer, &mut Diagnostics) -> Option<Spanned<T>>,
+) -> Option<Spanned<Box<[Spanned<T>]>>> {
     let mut values = vec![];
 
     loop {

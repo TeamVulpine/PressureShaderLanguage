@@ -5,9 +5,12 @@ pub mod symbol;
 
 use thiserror::Error;
 
-use crate::parser::{
+use crate::{
+    module_cache::ModuleIndex,
+    parser::token::{
+        ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral, symbol::Symbol,
+    },
     source::{SourceCursor, SourceSpan},
-    token::{ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral, symbol::Symbol},
 };
 
 pub(crate) use keywords_macro::keywords;
@@ -61,8 +64,8 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Token<'a> {
-    pub span: SourceSpan<'a>,
+pub struct Token {
+    pub span: SourceSpan,
     pub kind: TokenKind,
 }
 
@@ -82,27 +85,26 @@ pub enum TokenErrorKind {
     UnclosedStringLiteral,
 }
 
-#[derive(Debug, Clone, Error)]
-#[error("error ({span}): {kind}")]
-pub struct TokenError<'a> {
-    pub span: SourceSpan<'a>,
+#[derive(Debug, Clone)]
+pub struct TokenError {
+    pub span: SourceSpan,
     pub kind: TokenErrorKind,
 }
 
 pub struct Tokenizer<'a> {
     cursor: SourceCursor<'a>,
-    peek: Option<Token<'a>>,
+    peek: Option<Token>,
 }
 
 impl<'a> Tokenizer<'a> {
-    pub fn new(source: &'a str, file_path: Option<&'a str>) -> Self {
+    pub fn new(source: &'a str, module_index: ModuleIndex) -> Self {
         return Self {
-            cursor: SourceCursor::new(source, file_path),
+            cursor: SourceCursor::new(source, module_index),
             peek: None,
         };
     }
 
-    pub fn empty_span(&self) -> SourceSpan<'a> {
+    pub fn empty_span(&self) -> SourceSpan {
         return self.cursor.empty_span();
     }
 
@@ -114,7 +116,7 @@ impl<'a> Tokenizer<'a> {
         return consumed;
     }
 
-    fn skip_comments(&mut self) -> Result<bool, TokenError<'a>> {
+    fn skip_comments(&mut self) -> Result<bool, TokenError> {
         if self.cursor.consume_str("//") {
             self.cursor.while_fn(|c| c != '\n');
 
@@ -127,7 +129,7 @@ impl<'a> Tokenizer<'a> {
             while !self.cursor.consume_str("*/") {
                 if self.cursor.is_eof() {
                     return Err(TokenError {
-                        span: self.cursor.commit(),
+                        span: self.cursor.commit().0,
                         kind: TokenErrorKind::UnclosedMultilineComment,
                     });
                 }
@@ -143,7 +145,7 @@ impl<'a> Tokenizer<'a> {
         return Ok(false);
     }
 
-    fn skip_comments_and_whitespace(&mut self) -> Result<(), TokenError<'a>> {
+    fn skip_comments_and_whitespace(&mut self) -> Result<(), TokenError> {
         while self.skip_comments()? || self.skip_whitespace() {}
 
         return Ok(());
@@ -157,16 +159,16 @@ impl<'a> Tokenizer<'a> {
         return Self::is_ident_start(c) || c.is_ascii_digit();
     }
 
-    fn parse_ident(&mut self) -> Option<Token<'a>> {
+    fn parse_ident(&mut self) -> Option<Token> {
         if !self.cursor.is_fn(Self::is_ident_start) {
             return None;
         }
 
         self.cursor.while_fn(Self::is_ident_cont);
 
-        let span = self.cursor.commit();
+        let (span, source) = self.cursor.commit();
 
-        if let Some(keyword) = Keyword::from(span.slice()) {
+        if let Some(keyword) = Keyword::from(source) {
             return Some(Token {
                 span,
                 kind: TokenKind::Keyword(keyword),
@@ -174,21 +176,21 @@ impl<'a> Tokenizer<'a> {
         }
 
         return Some(Token {
-            kind: TokenKind::Identifier(PseudoKeyword::from(span.slice())),
+            kind: TokenKind::Identifier(PseudoKeyword::from(source)),
             span,
         });
     }
 
-    fn parse_symbol(&mut self) -> Option<Token<'a>> {
+    fn parse_symbol(&mut self) -> Option<Token> {
         let symbol = Symbol::parse(&mut self.cursor)?;
 
         return Some(Token {
-            span: self.cursor.commit(),
+            span: self.cursor.commit().0,
             kind: TokenKind::Symbol(symbol),
         });
     }
 
-    fn parse_number(&mut self) -> Result<Option<Token<'a>>, TokenError<'a>> {
+    fn parse_number(&mut self) -> Result<Option<Token>, TokenError> {
         let Some(number) = NumberLiteral::parse(&mut self.cursor)? else {
             self.cursor.rollback();
 
@@ -196,14 +198,14 @@ impl<'a> Tokenizer<'a> {
         };
 
         return Ok(Some(Token {
-            span: self.cursor.commit(),
+            span: self.cursor.commit().0,
             kind: TokenKind::NumberLiteral(number),
         }));
     }
 
     // String parsing is intentionally left simple.
     // It's only used for module resolution, so we don't need sophisticated escape handling.
-    fn parse_string(&mut self) -> Result<Option<Token<'a>>, TokenError<'a>> {
+    fn parse_string(&mut self) -> Result<Option<Token>, TokenError> {
         if !self.cursor.consume_char('"') {
             return Ok(None);
         }
@@ -212,23 +214,23 @@ impl<'a> Tokenizer<'a> {
 
         if !self.cursor.consume_char('"') {
             return Err(TokenError {
-                span: self.cursor.commit(),
+                span: self.cursor.commit().0,
                 kind: TokenErrorKind::UnclosedStringLiteral,
             });
         }
 
         return Ok(Some(Token {
-            span: self.cursor.commit(),
+            span: self.cursor.commit().0,
             kind: TokenKind::StringLiteral,
         }));
     }
 
-    fn next_raw(&mut self) -> Result<Token<'a>, TokenError<'a>> {
+    fn next_raw(&mut self) -> Result<Token, TokenError> {
         self.skip_comments_and_whitespace()?;
 
         if self.cursor.is_eof() {
             return Ok(Token {
-                span: self.cursor.commit(),
+                span: self.cursor.commit().0,
                 kind: TokenKind::Eof,
             });
         }
@@ -253,13 +255,13 @@ impl<'a> Tokenizer<'a> {
         self.cursor.advance();
 
         return Err(TokenError {
-            span: self.cursor.commit(),
+            span: self.cursor.commit().0,
             kind: TokenErrorKind::UnexpectedCharacter(c),
         });
     }
 
     #[must_use]
-    pub fn next(&mut self) -> Result<Token<'a>, TokenError<'a>> {
+    pub fn next(&mut self) -> Result<Token, TokenError> {
         if let Some(peek) = self.peek.take() {
             return Ok(peek);
         }
@@ -268,7 +270,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     #[must_use]
-    pub fn peek(&mut self) -> Result<Token<'a>, TokenError<'a>> {
+    pub fn peek(&mut self) -> Result<Token, TokenError> {
         if let Some(peek) = self.peek.clone() {
             return Ok(peek);
         }

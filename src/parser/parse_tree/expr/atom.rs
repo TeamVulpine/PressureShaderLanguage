@@ -1,23 +1,27 @@
-use crate::parser::{
+use crate::{
     diagnostic::{Diagnostics, FatalParsingError},
-    parse_tree::{TupleResult, expr::Expr, symbol::SymbolPath, try_keyword, try_number, try_tuple},
+    parser::{
+        parse_tree::{
+            TupleResult, expr::Expr, symbol::SymbolPath, try_keyword, try_number, try_tuple,
+        },
+        token::{Tokenizer, keyword::Keyword, number::NumberLiteral, symbol::Symbol},
+    },
     source::Spanned,
-    token::{Tokenizer, keyword::Keyword, number::NumberLiteral, symbol::Symbol},
 };
 
 #[derive(Debug)]
-pub enum AtomExpr<'a> {
+pub enum AtomExpr {
     Number(NumberLiteral),
     Boolean(bool),
-    Symbol(SymbolPath<'a>),
-    Tuple(Box<[Spanned<'a, Expr<'a>>]>),
+    Symbol(SymbolPath),
+    Tuple(Box<[Spanned<Expr>]>),
 }
 
-impl<'a> AtomExpr<'a> {
+impl AtomExpr {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Expr<'a>>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Expr>>, FatalParsingError> {
         if let Some(path) = SymbolPath::try_parse(tokenizer, diagnostics, false)? {
             return Ok(Some(path.map(Self::Symbol).map(Expr::Atom)));
         }

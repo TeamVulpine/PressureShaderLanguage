@@ -1,28 +1,30 @@
-use crate::parser::{
+use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
-    parse_tree::{
-        MismatchHandling, TupleResult, expect_parse, symbol::SymbolPath, try_tuple,
-        ty::slice::SliceTy,
+    parser::{
+        parse_tree::{
+            MismatchHandling, TupleResult, expect_parse, symbol::SymbolPath, try_tuple,
+            ty::slice::SliceTy,
+        },
+        token::{Tokenizer, symbol::Symbol},
     },
     source::Spanned,
-    token::{Tokenizer, symbol::Symbol},
 };
 
 pub mod slice;
 
 #[derive(Debug)]
-pub enum Ty<'a> {
-    Symbol(SymbolPath<'a>),
-    Slice(SliceTy<'a>),
-    Tuple(Box<[Spanned<'a, Ty<'a>>]>),
+pub enum Ty {
+    Symbol(SymbolPath),
+    Slice(SliceTy),
+    Tuple(Box<[Spanned<Ty>]>),
     Error,
 }
 
-impl<'a> Ty<'a> {
+impl Ty {
     pub fn try_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
-    ) -> Result<Option<Spanned<'a, Self>>, FatalParsingError> {
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
         if let Some(result) = try_tuple(
             tokenizer,
             diagnostics,
@@ -51,10 +53,10 @@ impl<'a> Ty<'a> {
     }
 
     pub fn expect_parse(
-        tokenizer: &mut Tokenizer<'a>,
-        diagnostics: &mut Diagnostics<'a>,
+        tokenizer: &mut Tokenizer,
+        diagnostics: &mut Diagnostics,
         mismatch_handling: MismatchHandling,
-    ) -> Result<Spanned<'a, Self>, FatalParsingError> {
+    ) -> Result<Spanned<Self>, FatalParsingError> {
         return expect_parse(
             tokenizer,
             diagnostics,
