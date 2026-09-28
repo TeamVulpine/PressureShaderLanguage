@@ -58,7 +58,7 @@ impl GenericArgument {
             tokenizer,
             diagnostics,
             Self::expect_parse,
-            Symbol::BracketOpen,
+            &[Symbol::BracketOpen],
             Symbol::BracketClose,
             Symbol::Comma,
             true,

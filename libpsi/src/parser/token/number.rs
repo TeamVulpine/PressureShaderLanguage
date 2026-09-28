@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::{
     parser::token::{TokenError, TokenErrorKind},
-    source::{SourceCursor, SourceSpan},
+    source::SourceCursor,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

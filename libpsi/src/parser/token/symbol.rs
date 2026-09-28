@@ -96,5 +96,9 @@ symbols! {
         Semicolon = ";",
         Colon = ":",
         Assign = "=",
+
+        // Attributes
+        Hash = "#",
+        Bang = "!",
     }
 }

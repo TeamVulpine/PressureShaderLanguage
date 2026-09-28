@@ -1,9 +1,15 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 
 use pawkit_interner::InternString;
 
 use crate::{
-    library::import::{FileSystemImportResolver, ImportResolver},
+    library::{
+        attribute::{
+            Attribute, AttributeVtable, DuplicateAttributeError,
+            intrinsic::create_intrinsic_attributes,
+        },
+        import::{FileSystemImportResolver, ImportResolver},
+    },
     module_cache::{ModuleCache, ModuleIndex},
 };
 
@@ -11,6 +17,8 @@ pub struct LibraryBuilder<R: ImportResolver> {
     import_resolver: R,
 
     root_modules: Vec<InternString>,
+
+    attributes: HashMap<&'static [&'static str], AttributeVtable>,
 }
 
 impl LibraryBuilder<FileSystemImportResolver> {
@@ -18,6 +26,7 @@ impl LibraryBuilder<FileSystemImportResolver> {
         return Self {
             import_resolver: FileSystemImportResolver,
             root_modules: Vec::new(),
+            attributes: create_intrinsic_attributes(),
         };
     }
 }
@@ -30,6 +39,7 @@ impl<R: ImportResolver> LibraryBuilder<R> {
         return LibraryBuilder {
             import_resolver,
             root_modules: self.root_modules,
+            attributes: self.attributes,
         };
     }
 
@@ -41,6 +51,21 @@ impl<R: ImportResolver> LibraryBuilder<R> {
         self.root_modules.extend(modules);
 
         return self;
+    }
+
+    pub fn register_attribute<T: Attribute + ttmap::Type>(
+        mut self,
+    ) -> Result<Self, DuplicateAttributeError> {
+        match self.attributes.entry(T::PATH) {
+            Entry::Occupied(_) => {
+                return Err(DuplicateAttributeError(T::PATH));
+            }
+            Entry::Vacant(vacant) => {
+                let vtable = AttributeVtable::of::<T>();
+                vacant.insert(vtable);
+                return Ok(self);
+            }
+        }
     }
 
     pub fn build(self) {

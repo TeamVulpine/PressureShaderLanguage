@@ -7,6 +7,7 @@ use crate::{
     source::{SourceSpan, Spanned},
 };
 
+pub mod attr;
 pub mod expr;
 pub mod symbol;
 pub mod ty;
@@ -139,7 +140,7 @@ impl MismatchHandling {
     }
 }
 
-fn peek_token(tokenizer: &mut Tokenizer, diagnostics: &mut Diagnostics) -> Token {
+fn peek_token<'a>(tokenizer: &mut Tokenizer<'a>, diagnostics: &mut Diagnostics) -> Token {
     loop {
         match tokenizer.peek() {
             Ok(it) => return it,
@@ -179,6 +180,18 @@ fn try_ident(
     _ = tokenizer.next();
 
     return Some(token.span.into_spanned(pseudo));
+}
+
+fn try_string(tokenizer: &mut Tokenizer, diagnostics: &mut Diagnostics) -> Option<SourceSpan> {
+    let token = peek_token(tokenizer, diagnostics);
+
+    let TokenKind::StringLiteral = token.kind else {
+        return None;
+    };
+
+    _ = tokenizer.next();
+
+    return Some(token.span);
 }
 
 fn try_number(
@@ -368,7 +381,29 @@ fn expect_pseudo_keyword(
     );
 }
 
-fn try_list<'a, T>(
+fn try_symbol_sequence(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+    symbols: &[Symbol],
+) -> Result<Option<SourceSpan>, FatalParsingError> {
+    let [first, rest @ ..] = symbols else {
+        return Ok(None);
+    };
+
+    let Some(mut span) = try_symbol(tokenizer, diagnostics, *first) else {
+        return Ok(None);
+    };
+
+    for &symbol in rest {
+        let current = expect_symbol(tokenizer, diagnostics, symbol, MismatchHandling::Consume)?;
+
+        span = span + current;
+    }
+
+    return Ok(Some(span));
+}
+
+fn try_list<T>(
     tokenizer: &mut Tokenizer,
     diagnostics: &mut Diagnostics,
     expect_parse: impl Fn(
@@ -376,12 +411,12 @@ fn try_list<'a, T>(
         &mut Diagnostics,
         MismatchHandling,
     ) -> Result<Spanned<T>, FatalParsingError>,
-    starting_symbol: Symbol,
+    starting_symbols: &[Symbol],
     closing_symbol: Symbol,
     delimiter: Symbol,
     allow_trailing: bool,
 ) -> Result<Option<Spanned<Box<[Spanned<T>]>>>, FatalParsingError> {
-    let Some(start) = try_symbol(tokenizer, diagnostics, starting_symbol) else {
+    let Some(start) = try_symbol_sequence(tokenizer, diagnostics, starting_symbols)? else {
         return Ok(None);
     };
 
@@ -542,4 +577,60 @@ fn try_many_infallible<'a, T>(
     };
 
     return Some(span.into_spanned(values.into()));
+}
+
+fn try_one_or_more<'a, T>(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+    try_parse: impl Fn(
+        &mut Tokenizer,
+        &mut Diagnostics,
+    ) -> Result<Option<Spanned<T>>, FatalParsingError>,
+    expect_parse: impl Fn(
+        &mut Tokenizer,
+        &mut Diagnostics,
+        MismatchHandling,
+    ) -> Result<Spanned<T>, FatalParsingError>,
+    delimiter: Symbol,
+) -> Result<Option<Spanned<Box<[Spanned<T>]>>>, FatalParsingError> {
+    let Some(first) = try_parse(tokenizer, diagnostics)? else {
+        return Ok(None);
+    };
+
+    let mut values = vec![first];
+
+    while try_symbol(tokenizer, diagnostics, delimiter).is_some() {
+        values.push(expect_parse(
+            tokenizer,
+            diagnostics,
+            MismatchHandling::ConsumeUntilSafe,
+        )?);
+    }
+
+    let span = values
+        .first()
+        .zip(values.last())
+        .map(|(a, b)| a.span + b.span)
+        .unwrap();
+
+    return Ok(Some(span.into_spanned(values.into())));
+}
+
+fn try_infallible<T>(
+    try_parse: impl Fn(&mut Tokenizer, &mut Diagnostics) -> Option<Spanned<T>>,
+) -> impl Fn(&mut Tokenizer, &mut Diagnostics) -> Result<Option<Spanned<T>>, FatalParsingError> {
+    return move |tokenizer, diagnostics| Ok(try_parse(tokenizer, diagnostics));
+}
+
+fn try_ident_path(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+) -> Result<Option<Spanned<Box<[Spanned<Option<PseudoKeyword>>]>>>, FatalParsingError> {
+    return try_one_or_more(
+        tokenizer,
+        diagnostics,
+        try_infallible(try_ident),
+        expect_ident,
+        Symbol::DoubleColon,
+    );
 }

@@ -57,6 +57,14 @@ pub enum DiagnosticKind {
     ExpectedSymbolPathPart {
         got: Box<DiagnosticKind>,
     },
+
+    ExpectedAttributeParameter {
+        got: Box<DiagnosticKind>,
+    },
+
+    ExpectedAttribute {
+        got: Box<DiagnosticKind>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -169,7 +177,7 @@ impl IntoReport for Diagnostic {
         return Report {
             severity: self.level.into(),
             message: self.kind.message(),
-            span: self.span,
+            span: Some(self.span),
             notes: Box::new([]),
         };
     }
@@ -238,6 +246,14 @@ impl DiagnosticKind {
                     "expected identifier or generic arguments, {}",
                     got.message()
                 ));
+            }
+
+            Self::ExpectedAttributeParameter { got } => {
+                return Cow::Owned(format!("expected attribute parameter, {}", got.message()));
+            }
+
+            Self::ExpectedAttribute { got } => {
+                return Cow::Owned(format!("expected attribute, {}", got.message()));
             }
         }
     }

@@ -2,40 +2,38 @@ use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
     parser::{
         parse_tree::{
-            MismatchHandling, expect_parse,
-            expr::{
-                atom::AtomExpr,
-                operator::{
-                    cast::CastOperationExpression, infix::InfixOperationExpr,
-                    postfix::PostfixOperationExpr, prefix::PrefixOperationExpr,
-                },
-            },
-            try_list,
+            MismatchHandling, expect_parse, try_ident_path, try_list, try_number, try_string,
         },
-        token::{Tokenizer, symbol::Symbol},
+        token::{Tokenizer, ident::PseudoKeyword, number::NumberLiteral, symbol::Symbol},
     },
     source::Spanned,
 };
 
-pub mod atom;
-pub mod operator;
-
-#[derive(Debug)]
-pub enum Expr {
-    PostfixOperation(PostfixOperationExpr),
-    PrefixOperation(PrefixOperationExpr),
-    InfixOperation(InfixOperationExpr),
-    CastOperation(CastOperationExpression),
-    Atom(AtomExpr),
+pub enum AttributeArgument {
+    String,
+    IdentPath(Box<[Spanned<Option<PseudoKeyword>>]>),
+    Number(NumberLiteral),
     Error,
 }
 
-impl Expr {
+impl AttributeArgument {
     pub fn try_parse(
         tokenizer: &mut Tokenizer,
         diagnostics: &mut Diagnostics,
     ) -> Result<Option<Spanned<Self>>, FatalParsingError> {
-        return InfixOperationExpr::try_parse(tokenizer, diagnostics, 0);
+        if let Some(span) = try_string(tokenizer, diagnostics) {
+            return Ok(Some(span.into_spanned(Self::String)));
+        }
+
+        if let Some(idents) = try_ident_path(tokenizer, diagnostics)? {
+            return Ok(Some(idents.map(Self::IdentPath)));
+        }
+
+        if let Some(number) = try_number(tokenizer, diagnostics) {
+            return Ok(Some(number.map(Self::Number)));
+        }
+
+        return Ok(None);
     }
 
     pub fn expect_parse(
@@ -48,9 +46,7 @@ impl Expr {
             diagnostics,
             mismatch_handling,
             Self::try_parse,
-            |diagnostic| DiagnosticKind::ExpectedExpr {
-                got: Box::new(diagnostic),
-            },
+            |got| DiagnosticKind::ExpectedAttributeParameter { got: Box::new(got) },
             || Self::Error,
         );
     }

@@ -5,7 +5,7 @@ use crate::{module_cache::ModuleCache, source::SourceSpan};
 pub struct Report {
     pub severity: ReportSeverity,
     pub message: Cow<'static, str>,
-    pub span: SourceSpan,
+    pub span: Option<SourceSpan>,
     pub notes: Box<[Cow<'static, str>]>,
 }
 
@@ -37,9 +37,10 @@ impl Report {
         output.push_str(self.severity.as_str());
         output.push_str(": ");
         output.push_str(&self.message);
-        output.push('\n');
 
-        Self::render_label(&mut output, modules, &self.span);
+        if let Some(span) = &self.span {
+            Self::render_label(&mut output, modules, span);
+        }
 
         for note in &self.notes {
             output.push_str("\n| ");
@@ -58,7 +59,7 @@ impl Report {
 
         let start = span.start_pos();
 
-        output.push_str("| --> ");
+        output.push_str("\n| --> ");
         output.push_str(&module.filename);
         output.push(':');
         output.push_str(&start.line().to_string());

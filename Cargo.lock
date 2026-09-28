@@ -50,8 +50,10 @@ checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 name = "libpsi"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "pawkit-interner",
  "thiserror",
+ "ttmap",
 ]
 
 [[package]]
@@ -191,6 +193,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "ttmap"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10348885d8e2c046d2ea30c3cf084af2a3382612be941ac46bd998ac686d4182"
 
 [[package]]
 name = "unicode-ident"
