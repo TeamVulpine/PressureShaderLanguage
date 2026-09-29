@@ -33,6 +33,8 @@ language are still growing, so expect breaking changes and bugs to crop up.
 - [ ] Getter / setter functions
 - [ ] LSP server
 - [ ] Command-line toolchain
+- [ ] Vectors and matrices as language-level declarations
+- [ ] STD140 and Scalar Block layout rules
 
 ## LLM Usage
 
