@@ -2,8 +2,8 @@
 
 This is the repository for the Pressure Shader Language.
 
-Initially, Pressure will support only Naga as a backend. This may be expanded in
-the future.
+Initially, Pressure will support only Naga as a backend. This is planned to be
+expanded in the future.
 
 ## Rationale
 
@@ -18,6 +18,19 @@ Rust's syntax where it makes sense for the goals of the language.
 
 Pressure is still a heavy work in progress. The specification, compiler, and
 language are still growing, so expect breaking changes and bugs to crop up.
+
+### Post-MVP Roadmap
+
+- [ ] Variadic templates
+- [ ] Mesh, tessellation, compute, and ray tracing pipelines
+- [ ] Traits
+- [ ] SPIR-V, DXIL, and MSL backends separate from Naga
+- [ ] Compiler optimizations
+- [ ] A standard library
+- [ ] Reference types
+- [ ] Pattern matching
+- [ ] Destructuring
+- [ ] Getter / setter functions
 
 ## LLM Usage
 

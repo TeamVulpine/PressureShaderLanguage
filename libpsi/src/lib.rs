@@ -1,4 +1,4 @@
-#![feature(never_type, hash_map_macro)]
+#![feature(never_type)]
 
 pub mod diagnostic;
 pub mod library;

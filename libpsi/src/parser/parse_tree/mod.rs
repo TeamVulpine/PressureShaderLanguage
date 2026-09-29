@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod attr;
+pub mod decl;
 pub mod expr;
 pub mod symbol;
 pub mod ty;
@@ -450,9 +451,57 @@ fn try_list<T>(
     }
 }
 
+fn try_list_pseudo_keyword<T>(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+    expect_parse: impl Fn(
+        &mut Tokenizer,
+        &mut Diagnostics,
+        MismatchHandling,
+    ) -> Result<Spanned<T>, FatalParsingError>,
+    starting_keyword: PseudoKeyword,
+    closing_symbol: Symbol,
+    delimiter: Symbol,
+    allow_trailing: bool,
+) -> Result<Option<Spanned<Box<[Spanned<T>]>>>, FatalParsingError> {
+    let Some(start) = try_pseudo_keyword(tokenizer, diagnostics, starting_keyword) else {
+        return Ok(None);
+    };
+
+    let mut values = vec![];
+
+    loop {
+        if (values.is_empty() || allow_trailing)
+            && let Some(end) = try_symbol(tokenizer, diagnostics, closing_symbol)
+        {
+            return Ok(Some((start + end).into_spanned(values.into())));
+        }
+
+        values.push(expect_parse(
+            tokenizer,
+            diagnostics,
+            MismatchHandling::ConsumeUntilSafe,
+        )?);
+
+        if try_symbol(tokenizer, diagnostics, delimiter).is_some() {
+            continue;
+        }
+
+        let end = expect_symbol(
+            tokenizer,
+            diagnostics,
+            closing_symbol,
+            MismatchHandling::Consume,
+        )?;
+
+        return Ok(Some((start + end).into_spanned(values.into())));
+    }
+}
+
 enum TupleResult<T> {
     Parenthesized(Spanned<T>),
     Tuple(Spanned<Box<[Spanned<T>]>>),
+    Unit(SourceSpan),
 }
 
 fn try_tuple<T>(
@@ -472,9 +521,7 @@ fn try_tuple<T>(
     };
 
     if let Some(end) = try_symbol(tokenizer, diagnostics, closing_symbol) {
-        return Ok(Some(TupleResult::Tuple(
-            (start + end).into_spanned(Box::new([])),
-        )));
+        return Ok(Some(TupleResult::Unit(start + end)));
     }
 
     let first = expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
@@ -579,7 +626,7 @@ fn try_many_infallible<'a, T>(
     return Some(span.into_spanned(values.into()));
 }
 
-fn try_one_or_more<'a, T>(
+fn try_one_or_more<T>(
     tokenizer: &mut Tokenizer,
     diagnostics: &mut Diagnostics,
     try_parse: impl Fn(
@@ -614,6 +661,37 @@ fn try_one_or_more<'a, T>(
         .unwrap();
 
     return Ok(Some(span.into_spanned(values.into())));
+}
+
+fn expect_one_or_more<T>(
+    tokenizer: &mut Tokenizer,
+    diagnostics: &mut Diagnostics,
+    expect_parse: impl Fn(
+        &mut Tokenizer,
+        &mut Diagnostics,
+        MismatchHandling,
+    ) -> Result<Spanned<T>, FatalParsingError>,
+    delimiter: Symbol,
+) -> Result<Spanned<Box<[Spanned<T>]>>, FatalParsingError> {
+    let first = expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
+
+    let mut values = vec![first];
+
+    while try_symbol(tokenizer, diagnostics, delimiter).is_some() {
+        values.push(expect_parse(
+            tokenizer,
+            diagnostics,
+            MismatchHandling::ConsumeUntilSafe,
+        )?);
+    }
+
+    let span = values
+        .first()
+        .zip(values.last())
+        .map(|(a, b)| a.span + b.span)
+        .unwrap();
+
+    return Ok(span.into_spanned(values.into()));
 }
 
 fn try_infallible<T>(

@@ -2,7 +2,10 @@ use libpsi::{
     diagnostic::Diagnostics,
     library::builder::LibraryBuilder,
     module_cache::ModuleCache,
-    parser::{parse_tree::expr::Expr, token::Tokenizer},
+    parser::{
+        parse_tree::{decl::where_clause::WhereParam, expr::Expr},
+        token::Tokenizer,
+    },
     report::IntoReport,
 };
 use pawkit_interner::InternString;
@@ -23,7 +26,7 @@ fn main() {
     let mut tokenizer = Tokenizer::new(&contents, index);
     let mut diagnostics = Diagnostics::new();
 
-    let path = Expr::try_parse(&mut tokenizer, &mut diagnostics).unwrap();
+    let path = WhereParam::try_list(&mut tokenizer, &mut diagnostics).unwrap();
 
     println!("{:?}", path);
 

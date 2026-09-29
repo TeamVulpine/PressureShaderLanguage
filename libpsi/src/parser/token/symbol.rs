@@ -99,6 +99,5 @@ symbols! {
 
         // Attributes
         Hash = "#",
-        Bang = "!",
     }
 }

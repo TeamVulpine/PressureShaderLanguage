@@ -50,7 +50,15 @@ pub enum DiagnosticKind {
         got: Box<DiagnosticKind>,
     },
 
+    ExpectedGenericParam {
+        got: Box<DiagnosticKind>,
+    },
+
     ExpectedGenericArgument {
+        got: Box<DiagnosticKind>,
+    },
+
+    ExpectedSymbolPath {
         got: Box<DiagnosticKind>,
     },
 
@@ -234,11 +242,22 @@ impl DiagnosticKind {
                 return Cow::Owned(format!("expected type, {}", got.message()));
             }
 
+            Self::ExpectedGenericParam { got } => {
+                return Cow::Owned(format!(
+                    "expected generic parameter or closing ';', {}",
+                    got.message()
+                ));
+            }
+
             Self::ExpectedGenericArgument { got } => {
                 return Cow::Owned(format!(
                     "expected generic argument or closing ']', {}",
                     got.message()
                 ));
+            }
+
+            Self::ExpectedSymbolPath { got } => {
+                return Cow::Owned(format!("expected symbol, {}", got.message()));
             }
 
             Self::ExpectedSymbolPathPart { got } => {

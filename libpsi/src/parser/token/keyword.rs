@@ -5,7 +5,7 @@ keywords! {
     pub enum Keyword {
         // Modules
         Mod = "mod",
-        Use = "use",
+        Pub = "pub",
 
         // Declarators
         Fn = "fn",
@@ -13,7 +13,6 @@ keywords! {
         Struct = "struct",
         Enum = "enum",
         Let = "let",
-        Static = "static",
         Const = "const",
         Trait = "trait",
         Impl = "impl",
@@ -24,10 +23,25 @@ keywords! {
         // Modifiers
         Mut = "mut",
         As = "as",
+        In = "in",
+        Out = "out",
 
-        // Values
+        // Values / Types
         True = "true",
         False = "false",
         SelfValue = "self",
+        SelfType = "Self",
+        DiscardValue = "_",
+
+        // Control Flow
+        If = "if",
+        Else = "else",
+        For = "for",
+        Loop = "loop",
+        While = "while",
+        Match = "match",
+        Return = "return",
+        Break = "break",
+        Continue = "continue",
     }
 }

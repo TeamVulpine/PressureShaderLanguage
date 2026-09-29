@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Debug)]
 pub enum PostfixOperator {
-    Field(Option<PseudoKeyword>),
+    Field(Spanned<Option<PseudoKeyword>>),
     Invoke(Box<[Spanned<Expr>]>),
     Access(Box<Expr>),
     Generics(Box<[Spanned<GenericArgument>]>),
@@ -36,7 +36,7 @@ impl PostfixOperator {
 
             let span = start + ident.span;
 
-            return Ok(Some(span.into_spanned(Self::Field(ident.value))));
+            return Ok(Some(span.into_spanned(Self::Field(ident))));
         }
 
         if let Some(values) = Expr::try_list(tokenizer, diagnostics)? {

@@ -2,7 +2,7 @@ use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
     parser::{
         parse_tree::{
-            MismatchHandling, TupleResult, expect_parse, symbol::SymbolPath, try_tuple,
+            MismatchHandling, TupleResult, expect_parse, symbol::SymbolPath, try_symbol, try_tuple,
             ty::slice::SliceTy,
         },
         token::{Tokenizer, symbol::Symbol},
@@ -17,6 +17,8 @@ pub enum Ty {
     Symbol(SymbolPath),
     Slice(SliceTy),
     Tuple(Box<[Spanned<Ty>]>),
+    Unit,
+    Never,
     Error,
 }
 
@@ -38,6 +40,7 @@ impl Ty {
                 TupleResult::Tuple(tys) => {
                     return Ok(Some(tys.map(Self::Tuple)));
                 }
+                TupleResult::Unit(span) => return Ok(Some(span.into_spanned(Self::Unit))),
             }
         }
 
@@ -47,6 +50,10 @@ impl Ty {
 
         if let Some(slice) = SliceTy::try_parse(tokenizer, diagnostics)? {
             return Ok(Some(slice.map(Self::Slice)));
+        }
+
+        if let Some(span) = try_symbol(tokenizer, diagnostics, Symbol::Not) {
+            return Ok(Some(span.into_spanned(Self::Never)));
         }
 
         return Ok(None);

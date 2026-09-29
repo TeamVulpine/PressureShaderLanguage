@@ -80,7 +80,7 @@ impl Attribute {
             tokenizer,
             diagnostics,
             Self::expect_parse,
-            &[Symbol::Bang, Symbol::BracketOpen],
+            &[Symbol::Not, Symbol::BracketOpen],
             Symbol::BracketClose,
             Symbol::Comma,
             true,

@@ -13,6 +13,8 @@ use crate::{
 pub enum AtomExpr {
     Number(NumberLiteral),
     Boolean(bool),
+    SelfValue,
+    Unit,
     Symbol(SymbolPath),
     Tuple(Box<[Spanned<Expr>]>),
 }
@@ -31,13 +33,15 @@ impl AtomExpr {
         }
 
         if let Some(span) = try_keyword(tokenizer, diagnostics, Keyword::True) {
-            return Ok(Some(span.into_spanned(Self::Boolean(true)).map(Expr::Atom)));
+            return Ok(Some(span.into_spanned(Expr::Atom(Self::Boolean(true)))));
         }
 
         if let Some(span) = try_keyword(tokenizer, diagnostics, Keyword::False) {
-            return Ok(Some(
-                span.into_spanned(Self::Boolean(false)).map(Expr::Atom),
-            ));
+            return Ok(Some(span.into_spanned(Expr::Atom(Self::Boolean(false)))));
+        }
+
+        if let Some(span) = try_keyword(tokenizer, diagnostics, Keyword::SelfValue) {
+            return Ok(Some(span.into_spanned(Expr::Atom(Self::SelfValue))));
         }
 
         if let Some(result) = try_tuple(
@@ -52,6 +56,9 @@ impl AtomExpr {
                 TupleResult::Parenthesized(expr) => return Ok(Some(expr)),
                 TupleResult::Tuple(exprs) => {
                     return Ok(Some(exprs.map(Self::Tuple).map(Expr::Atom)));
+                }
+                TupleResult::Unit(span) => {
+                    return Ok(Some(span.into_spanned(Expr::Atom(AtomExpr::Unit))));
                 }
             }
         }

@@ -1,9 +1,9 @@
-from "engine:common/oklab" use oklab_to_rgb;
+import { oklab_to_rgb } from "engine:common/oklab";
 
-from "engine:binding/frame" use FrameParams;
-from "engine:binding/sprite" use SpriteParams;
-from "engine:binding/block_model" use BlockModelParams;
-from "engine:binding/chunk" use ChunkParams;
+import { FrameParams } from "engine:binding/frame";
+import { SpriteParams } from "engine:binding/sprite";
+import { BlockModelParams } from "engine:binding/block_model";
+import { ChunkParams } from "engine:binding/chunk";
 
 struct VertexOut {
     #[builtin(position)]

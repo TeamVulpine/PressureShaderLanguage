@@ -1,1 +1,4 @@
-(1, 2) as 3 (u32, u32)
+where
+    type T,
+    const U: T,
+    type V: A + B + C,;
