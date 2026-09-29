@@ -1,7 +1,9 @@
 use crate::{
     diagnostic::{Diagnostics, FatalParsingError},
     parser::{
-        parse_tree::{MismatchHandling, expect_symbol, expr::Expr, try_keyword, ty::Ty},
+        parse_tree::{
+            MismatchHandling, expect_symbol, expr::Expr, symbol::SymbolPath, try_keyword, ty::Ty,
+        },
         token::{Tokenizer, keyword::Keyword, symbol::Symbol},
     },
     source::Spanned,
@@ -9,7 +11,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct PipelineParamConfig {
-    pub ty: Spanned<Ty>,
+    pub param: Spanned<SymbolPath>,
     pub slot: Spanned<Expr>,
 }
 
@@ -22,7 +24,12 @@ impl PipelineParamConfig {
             return Ok(None);
         };
 
-        let ty = Ty::expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
+        let param = SymbolPath::expect_parse(
+            tokenizer,
+            diagnostics,
+            MismatchHandling::ConsumeUntilSafe,
+            true,
+        )?;
 
         expect_symbol(
             tokenizer,
@@ -40,6 +47,6 @@ impl PipelineParamConfig {
             MismatchHandling::Consume,
         )?;
 
-        return Ok(Some((start + end).into_spanned(Self { ty, slot })));
+        return Ok(Some((start + end).into_spanned(Self { param, slot })));
     }
 }
