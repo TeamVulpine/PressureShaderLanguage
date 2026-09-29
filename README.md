@@ -31,6 +31,8 @@ language are still growing, so expect breaking changes and bugs to crop up.
 - [ ] Pattern matching
 - [ ] Destructuring
 - [ ] Getter / setter functions
+- [ ] LSP server
+- [ ] Command-line toolchain
 
 ## LLM Usage
 

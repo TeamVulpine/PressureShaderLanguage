@@ -44,10 +44,13 @@ impl ConstantDecl {
 
         let value = Expr::expect_parse(tokenizer, diagnostics, MismatchHandling::ConsumeUntilSafe)?;
 
-        return Ok(Some((start + value.span).into_spanned(Self {
-            name,
-            ty,
-            value,
-        })));
+        let end = expect_symbol(
+            tokenizer,
+            diagnostics,
+            Symbol::Semicolon,
+            MismatchHandling::Consume,
+        )?;
+
+        return Ok(Some((start + end).into_spanned(Self { name, ty, value })));
     }
 }
