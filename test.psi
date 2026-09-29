@@ -1,4 +1,10 @@
-where
-    type T,
-    const U: T,
-    type V: A + B + C,;
+pipeline ChunkPipeline : raster {
+    param FrameParams : 0;
+    param SpriteParams : 1;
+    param BlockModelParams : 2;
+    param ChunkParams : 3;
+
+    vertex vs_main;
+
+    fragment fs_main;
+}

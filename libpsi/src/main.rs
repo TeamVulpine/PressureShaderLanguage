@@ -3,7 +3,10 @@ use libpsi::{
     library::builder::LibraryBuilder,
     module_cache::ModuleCache,
     parser::{
-        parse_tree::{decl::where_clause::WhereParam, expr::Expr},
+        parse_tree::{
+            decl::{pipeline::PipelineBlock, where_clause::WhereParam},
+            expr::Expr,
+        },
         token::Tokenizer,
     },
     report::IntoReport,
@@ -26,7 +29,7 @@ fn main() {
     let mut tokenizer = Tokenizer::new(&contents, index);
     let mut diagnostics = Diagnostics::new();
 
-    let path = WhereParam::try_list(&mut tokenizer, &mut diagnostics).unwrap();
+    let path = PipelineBlock::try_parse(&mut tokenizer, &mut diagnostics).unwrap();
 
     println!("{:?}", path);
 

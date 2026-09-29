@@ -1,7 +1,7 @@
 use crate::{
     diagnostic::{DiagnosticKind, Diagnostics, FatalParsingError},
     parser::token::{
-        Token, TokenKind, Tokenizer, ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral,
+        Token, Tokenizer, ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral,
         symbol::Symbol,
     },
     source::{SourceSpan, Spanned},
@@ -15,7 +15,6 @@ pub mod ty;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MismatchHandling {
-    Skip,
     Consume,
     ConsumeUntilSafe,
     Fatal,
@@ -74,7 +73,28 @@ impl MismatchHandling {
     ) -> Result<(), FatalParsingError> {
         match self {
             Self::Consume => {
-                _ = tokenizer.next();
+                let peek = peek_token(tokenizer, diagnostics);
+
+                let Token::Symbol(symbol) = peek.value else {
+                    _ = tokenizer.next();
+                    return Ok(());
+                };
+
+                let safe = !matches!(
+                    symbol,
+                    Symbol::ParenOpen
+                        | Symbol::ParenClose
+                        | Symbol::BraceOpen
+                        | Symbol::BraceClose
+                        | Symbol::BracketOpen
+                        | Symbol::BracketClose
+                        | Symbol::Semicolon
+                        | Symbol::Comma
+                );
+
+                if safe {
+                    _ = tokenizer.next();
+                }
 
                 return Ok(());
             }
@@ -92,8 +112,8 @@ impl MismatchHandling {
 
                     let peek = peek_token(tokenizer, diagnostics);
 
-                    let TokenKind::Symbol(symbol) = peek.kind else {
-                        if peek.kind == TokenKind::Eof {
+                    let Token::Symbol(symbol) = peek.value else {
+                        if peek.value == Token::Eof {
                             return Ok(());
                         }
 
@@ -141,7 +161,7 @@ impl MismatchHandling {
     }
 }
 
-fn peek_token<'a>(tokenizer: &mut Tokenizer<'a>, diagnostics: &mut Diagnostics) -> Token {
+fn peek_token<'a>(tokenizer: &mut Tokenizer<'a>, diagnostics: &mut Diagnostics) -> Spanned<Token> {
     loop {
         match tokenizer.peek() {
             Ok(it) => return it,
@@ -161,7 +181,7 @@ fn peek_symbol(
 ) -> Option<SourceSpan> {
     let token = peek_token(tokenizer, diagnostics);
 
-    if token.kind == TokenKind::Symbol(symbol) {
+    if token.value == Token::Symbol(symbol) {
         return Some(token.span);
     }
 
@@ -174,7 +194,7 @@ fn try_ident(
 ) -> Option<Spanned<Option<PseudoKeyword>>> {
     let token = peek_token(tokenizer, diagnostics);
 
-    let TokenKind::Identifier(pseudo) = token.kind else {
+    let Token::Identifier(pseudo) = token.value else {
         return None;
     };
 
@@ -186,7 +206,7 @@ fn try_ident(
 fn try_string(tokenizer: &mut Tokenizer, diagnostics: &mut Diagnostics) -> Option<SourceSpan> {
     let token = peek_token(tokenizer, diagnostics);
 
-    let TokenKind::StringLiteral = token.kind else {
+    let Token::StringLiteral = token.value else {
         return None;
     };
 
@@ -201,7 +221,7 @@ fn try_number(
 ) -> Option<Spanned<NumberLiteral>> {
     let token = peek_token(tokenizer, diagnostics);
 
-    let TokenKind::NumberLiteral(number) = token.kind else {
+    let Token::NumberLiteral(number) = token.value else {
         return None;
     };
 
@@ -217,7 +237,7 @@ fn expect_ident(
 ) -> Result<Spanned<Option<PseudoKeyword>>, FatalParsingError> {
     let token = peek_token(tokenizer, diagnostics);
 
-    let TokenKind::Identifier(pseudo) = token.kind else {
+    let Token::Identifier(pseudo) = token.value else {
         mismatch_handling.push_diagnostic(
             diagnostics,
             DiagnosticKind::ExpectedIdent {
@@ -239,11 +259,11 @@ fn expect_ident(
 fn try_token(
     tokenizer: &mut Tokenizer,
     diagnostics: &mut Diagnostics,
-    expected_token: TokenKind,
+    expected_token: Token,
 ) -> Option<SourceSpan> {
     let token = peek_token(tokenizer, diagnostics);
 
-    if token.kind == expected_token {
+    if token.value == expected_token {
         _ = tokenizer.next();
         return Some(token.span);
     }
@@ -256,7 +276,7 @@ fn try_symbol(
     diagnostics: &mut Diagnostics,
     symbol: Symbol,
 ) -> Option<SourceSpan> {
-    return try_token(tokenizer, diagnostics, TokenKind::Symbol(symbol));
+    return try_token(tokenizer, diagnostics, Token::Symbol(symbol));
 }
 
 fn try_keyword(
@@ -264,7 +284,7 @@ fn try_keyword(
     diagnostics: &mut Diagnostics,
     keyword: Keyword,
 ) -> Option<SourceSpan> {
-    return try_token(tokenizer, diagnostics, TokenKind::Keyword(keyword));
+    return try_token(tokenizer, diagnostics, Token::Keyword(keyword));
 }
 
 fn try_pseudo_keyword(
@@ -272,7 +292,7 @@ fn try_pseudo_keyword(
     diagnostics: &mut Diagnostics,
     keyword: PseudoKeyword,
 ) -> Option<SourceSpan> {
-    return try_token(tokenizer, diagnostics, TokenKind::Identifier(Some(keyword)));
+    return try_token(tokenizer, diagnostics, Token::Identifier(Some(keyword)));
 }
 
 fn expect_parse<'a, T>(
@@ -305,13 +325,13 @@ fn expect_parse<'a, T>(
 fn expect_token(
     tokenizer: &mut Tokenizer,
     diagnostics: &mut Diagnostics,
-    expected_token: TokenKind,
+    expected_token: Token,
     mismatch_handling: MismatchHandling,
     produce_diagnostic: impl FnOnce(DiagnosticKind) -> DiagnosticKind,
 ) -> Result<SourceSpan, FatalParsingError> {
     let token = peek_token(tokenizer, diagnostics);
 
-    if token.kind == expected_token {
+    if token.value == expected_token {
         _ = tokenizer.next();
 
         return Ok(token.span);
@@ -337,7 +357,7 @@ fn expect_symbol(
     return expect_token(
         tokenizer,
         diagnostics,
-        TokenKind::Symbol(symbol),
+        Token::Symbol(symbol),
         mismatch_handling,
         |diagnostic| DiagnosticKind::ExpectedSymbol {
             symbol,
@@ -355,7 +375,7 @@ fn expect_keyword(
     return expect_token(
         tokenizer,
         diagnostics,
-        TokenKind::Keyword(keyword),
+        Token::Keyword(keyword),
         mismatch_handling,
         |diagnostic| DiagnosticKind::ExpectedKeyword {
             keyword,
@@ -373,7 +393,7 @@ fn expect_pseudo_keyword(
     return expect_token(
         tokenizer,
         diagnostics,
-        TokenKind::Identifier(Some(keyword)),
+        Token::Identifier(Some(keyword)),
         mismatch_handling,
         |diagnostic| DiagnosticKind::ExpectedPseudoKeyword {
             keyword,

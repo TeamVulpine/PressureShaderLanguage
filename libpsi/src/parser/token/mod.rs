@@ -10,7 +10,7 @@ use crate::{
     parser::token::{
         ident::PseudoKeyword, keyword::Keyword, number::NumberLiteral, symbol::Symbol,
     },
-    source::{SourceCursor, SourceSpan},
+    source::{SourceCursor, SourceSpan, Spanned},
 };
 
 pub(crate) use keywords_macro::keywords;
@@ -54,19 +54,13 @@ mod keywords_macro {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum TokenKind {
+pub enum Token {
     Identifier(Option<PseudoKeyword>),
     Keyword(Keyword),
     Symbol(Symbol),
     NumberLiteral(NumberLiteral),
     StringLiteral,
     Eof,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Token {
-    pub span: SourceSpan,
-    pub kind: TokenKind,
 }
 
 #[derive(Debug, Clone, Copy, Error)]
@@ -93,7 +87,7 @@ pub struct TokenError {
 
 pub struct Tokenizer<'a> {
     cursor: SourceCursor<'a>,
-    peek: Option<Token>,
+    peek: Option<Spanned<Token>>,
 }
 
 impl<'a> Tokenizer<'a> {
@@ -159,7 +153,7 @@ impl<'a> Tokenizer<'a> {
         return Self::is_ident_start(c) || c.is_ascii_digit();
     }
 
-    fn parse_ident(&mut self) -> Option<Token> {
+    fn parse_ident(&mut self) -> Option<Spanned<Token>> {
         if !self.cursor.is_fn(Self::is_ident_start) {
             return None;
         }
@@ -169,43 +163,36 @@ impl<'a> Tokenizer<'a> {
         let (span, source) = self.cursor.commit();
 
         if let Some(keyword) = Keyword::from(source) {
-            return Some(Token {
-                span,
-                kind: TokenKind::Keyword(keyword),
-            });
+            return Some(span.into_spanned(Token::Keyword(keyword)));
         }
 
-        return Some(Token {
-            kind: TokenKind::Identifier(PseudoKeyword::from(source)),
-            span,
-        });
+        return Some(span.into_spanned(Token::Identifier(PseudoKeyword::from(source))));
     }
 
-    fn parse_symbol(&mut self) -> Option<Token> {
+    fn parse_symbol(&mut self) -> Option<Spanned<Token>> {
         let symbol = Symbol::parse(&mut self.cursor)?;
 
-        return Some(Token {
-            span: self.cursor.commit().0,
-            kind: TokenKind::Symbol(symbol),
-        });
+        return Some(self.cursor.commit().0.into_spanned(Token::Symbol(symbol)));
     }
 
-    fn parse_number(&mut self) -> Result<Option<Token>, TokenError> {
+    fn parse_number(&mut self) -> Result<Option<Spanned<Token>>, TokenError> {
         let Some(number) = NumberLiteral::parse(&mut self.cursor)? else {
             self.cursor.rollback();
 
             return Ok(None);
         };
 
-        return Ok(Some(Token {
-            span: self.cursor.commit().0,
-            kind: TokenKind::NumberLiteral(number),
-        }));
+        return Ok(Some(
+            self.cursor
+                .commit()
+                .0
+                .into_spanned(Token::NumberLiteral(number)),
+        ));
     }
 
     // String parsing is intentionally left simple.
     // It's only used for module resolution, so we don't need sophisticated escape handling.
-    fn parse_string(&mut self) -> Result<Option<Token>, TokenError> {
+    fn parse_string(&mut self) -> Result<Option<Spanned<Token>>, TokenError> {
         if !self.cursor.consume_char('"') {
             return Ok(None);
         }
@@ -219,20 +206,16 @@ impl<'a> Tokenizer<'a> {
             });
         }
 
-        return Ok(Some(Token {
-            span: self.cursor.commit().0,
-            kind: TokenKind::StringLiteral,
-        }));
+        return Ok(Some(
+            self.cursor.commit().0.into_spanned(Token::StringLiteral),
+        ));
     }
 
-    fn next_raw(&mut self) -> Result<Token, TokenError> {
+    fn next_raw(&mut self) -> Result<Spanned<Token>, TokenError> {
         self.skip_comments_and_whitespace()?;
 
         if self.cursor.is_eof() {
-            return Ok(Token {
-                span: self.cursor.commit().0,
-                kind: TokenKind::Eof,
-            });
+            return Ok(self.cursor.commit().0.into_spanned(Token::Eof));
         }
 
         if let Some(token) = self.parse_ident() {
@@ -261,7 +244,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     #[must_use]
-    pub fn next(&mut self) -> Result<Token, TokenError> {
+    pub fn next(&mut self) -> Result<Spanned<Token>, TokenError> {
         if let Some(peek) = self.peek.take() {
             return Ok(peek);
         }
@@ -270,7 +253,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     #[must_use]
-    pub fn peek(&mut self) -> Result<Token, TokenError> {
+    pub fn peek(&mut self) -> Result<Spanned<Token>, TokenError> {
         if let Some(peek) = self.peek.clone() {
             return Ok(peek);
         }

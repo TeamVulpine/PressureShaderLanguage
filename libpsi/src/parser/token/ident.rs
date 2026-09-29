@@ -8,5 +8,9 @@ keywords! {
         Where = "where",
         From = "from",
         Import = "import",
+
+        Raster = "raster",
+        Vertex = "vertex",
+        Fragment = "fragment",
     }
 }

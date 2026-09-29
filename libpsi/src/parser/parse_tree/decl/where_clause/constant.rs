@@ -22,7 +22,7 @@ impl WhereConstant {
             return Ok(None);
         };
 
-        let name = expect_ident(tokenizer, diagnostics, MismatchHandling::Skip)?;
+        let name = expect_ident(tokenizer, diagnostics, MismatchHandling::Consume)?;
 
         expect_symbol(
             tokenizer,

@@ -4,11 +4,10 @@ use thiserror::Error;
 
 use crate::{
     parser::token::{
-        Token, TokenError, TokenErrorKind, TokenKind, ident::PseudoKeyword, keyword::Keyword,
-        symbol::Symbol,
+        Token, TokenError, TokenErrorKind, ident::PseudoKeyword, keyword::Keyword, symbol::Symbol,
     },
     report::{IntoReport, Report, ReportSeverity},
-    source::SourceSpan,
+    source::{SourceSpan, Spanned},
 };
 
 #[derive(Debug, Error, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
@@ -71,6 +70,10 @@ pub enum DiagnosticKind {
     },
 
     ExpectedAttribute {
+        got: Box<DiagnosticKind>,
+    },
+
+    ExpectedPipelineKind {
         got: Box<DiagnosticKind>,
     },
 }
@@ -151,8 +154,8 @@ impl Diagnostics {
 }
 
 impl DiagnosticKind {
-    pub fn from_token(token: Token) -> Self {
-        if let TokenKind::Eof = token.kind {
+    pub fn from_token(token: Spanned<Token>) -> Self {
+        if let Token::Eof = token.value {
             return Self::UnexpectedEof;
         }
 
@@ -194,8 +197,8 @@ impl IntoReport for Diagnostic {
 impl DiagnosticKind {
     fn message(&self) -> Cow<'static, str> {
         match self {
-            Self::Token(token_error) => {
-                return Cow::Owned(token_error.kind.to_string());
+            Self::Token(error) => {
+                return Cow::Owned(error.kind.to_string());
             }
 
             Self::UnexpectedToken(_) => {
@@ -273,6 +276,10 @@ impl DiagnosticKind {
 
             Self::ExpectedAttribute { got } => {
                 return Cow::Owned(format!("expected attribute, {}", got.message()));
+            }
+
+            Self::ExpectedPipelineKind { got } => {
+                return Cow::Owned(format!("expected pipeline type, {}", got.message()));
             }
         }
     }
