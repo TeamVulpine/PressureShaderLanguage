@@ -36,13 +36,13 @@ pub enum InfixOperator {
     Shl, // <<
     Shr, // >>
 
-    Range,   // ..
-    RangeTo, // ..=
+         // Range,   // ..
+         // RangeTo, // ..=
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum InfixOperatorPrecedence {
-    Range = 10,
+    // Range = 10,
     BoolOr = 20,
     BoolAnd = 30,
     Compare = 40,
@@ -79,8 +79,7 @@ impl InfixOperator {
 
             Self::BoolAnd => InfixOperatorPrecedence::BoolAnd,
             Self::BoolOr => InfixOperatorPrecedence::BoolOr,
-
-            Self::Range | Self::RangeTo => InfixOperatorPrecedence::Range,
+            // Self::Range | Self::RangeTo => InfixOperatorPrecedence::Range,
         };
     }
 
@@ -111,8 +110,8 @@ impl InfixOperator {
             (Symbol::BitwiseXor, InfixOperator::BitXor),
             (Symbol::ShiftLeft, InfixOperator::Shl),
             (Symbol::ShiftRight, InfixOperator::Shr),
-            (Symbol::Range, InfixOperator::Range),
-            (Symbol::RangeTo, InfixOperator::RangeTo),
+            // (Symbol::Range, InfixOperator::Range),
+            // (Symbol::RangeTo, InfixOperator::RangeTo),
         ];
 
         for (symbol, operator) in MAPPING {

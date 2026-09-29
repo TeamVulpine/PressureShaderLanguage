@@ -16,8 +16,8 @@ use crate::{
 pub enum PostfixOperator {
     Field(Spanned<Option<PseudoKeyword>>),
     Invoke(Box<[Spanned<Expr>]>),
-    Access(Box<Expr>),
-    Generics(Box<[Spanned<GenericArgument>]>),
+    Access(Box<Spanned<Expr>>),
+    // Generics(Box<[Spanned<GenericArgument>]>),
 }
 
 #[derive(Debug)]
@@ -55,21 +55,21 @@ impl PostfixOperator {
             )?;
 
             return Ok(Some(
-                (start + end).into_spanned(Self::Access(Box::new(expr.value))),
+                (start + end).into_spanned(Self::Access(Box::new(expr))),
             ));
         }
 
-        if let Some(start) = try_symbol(tokenizer, diagnostics, Symbol::DoubleColon) {
-            let generics = GenericArgument::expect_list(
-                tokenizer,
-                diagnostics,
-                MismatchHandling::ConsumeUntilSafe,
-            )?;
+        // if let Some(start) = try_symbol(tokenizer, diagnostics, Symbol::DoubleColon) {
+        //     let generics = GenericArgument::expect_list(
+        //         tokenizer,
+        //         diagnostics,
+        //         MismatchHandling::ConsumeUntilSafe,
+        //     )?;
 
-            let span = start + generics.span;
+        //     let span = start + generics.span;
 
-            return Ok(Some(span.into_spanned(Self::Generics(generics.value))));
-        }
+        //     return Ok(Some(span.into_spanned(Self::Generics(generics.value))));
+        // }
 
         return Ok(None);
     }

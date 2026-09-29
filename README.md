@@ -21,9 +21,13 @@ language are still growing, so expect breaking changes and bugs to crop up.
 
 ### Post-MVP Roadmap
 
+- [ ] Templates
 - [ ] Variadic templates
 - [ ] Mesh, tessellation, compute, and ray tracing pipelines
 - [ ] Traits
+- [ ] Impl blocks
+- [ ] Support for nested symbols
+- [ ] Range operators
 - [ ] SPIR-V, DXIL, and MSL backends separate from Naga
 - [ ] Compiler optimizations
 - [ ] A standard library
@@ -34,7 +38,7 @@ language are still growing, so expect breaking changes and bugs to crop up.
 - [ ] LSP server
 - [ ] Command-line toolchain
 - [ ] Vectors and matrices as language-level declarations
-- [ ] STD140 and Scalar Block layout rules
+- [ ] Additional layout rules (`std140`, `scalar_block`, `wgsl`)
 
 ## LLM Usage
 

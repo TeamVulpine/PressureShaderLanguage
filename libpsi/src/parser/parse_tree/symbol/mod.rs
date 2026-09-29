@@ -19,7 +19,7 @@ pub mod ty;
 pub enum SymbolPath {
     Parsed {
         first: Box<Spanned<SymbolPathStart>>,
-        parts: Box<[Spanned<SymbolPathPart>]>,
+        // parts: Box<[Spanned<SymbolPathPart>]>,
     },
     Error,
 }
@@ -34,19 +34,21 @@ impl SymbolPath {
             return Ok(None);
         };
 
-        let parts = SymbolPathPart::try_many(tokenizer, diagnostics, lenient_generic_separation)?;
+        // let parts = SymbolPathPart::try_many(tokenizer, diagnostics, lenient_generic_separation)?;
 
-        let (parts_span, parts) = if let Some(parts) = parts {
-            (parts.span, parts.value)
-        } else {
-            (first.span, Default::default())
-        };
+        // let (parts_span, parts) = if let Some(parts) = parts {
+        //     (parts.span, parts.value)
+        // } else {
+        //     (first.span, Default::default())
+        // };
 
-        let span = first.span + parts_span;
+        // let span = first.span + parts_span;
+
+        let span = first.span;
 
         return Ok(Some(span.into_spanned(Self::Parsed {
             first: Box::new(first),
-            parts,
+            // parts,
         })));
     }
 
