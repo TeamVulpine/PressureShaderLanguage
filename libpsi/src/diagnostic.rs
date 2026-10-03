@@ -73,6 +73,14 @@ pub enum DiagnosticKind {
         got: Box<DiagnosticKind>,
     },
 
+    ExpectedStructField {
+        got: Box<DiagnosticKind>,
+    },
+
+    ExpectedStructBody {
+        got: Box<DiagnosticKind>,
+    },
+
     ExpectedPipelineKind {
         got: Box<DiagnosticKind>,
     },
@@ -276,6 +284,14 @@ impl DiagnosticKind {
 
             Self::ExpectedAttribute { got } => {
                 return Cow::Owned(format!("expected attribute, {}", got.message()));
+            }
+
+            Self::ExpectedStructField { got } => {
+                return Cow::Owned(format!("expected field, {}", got.message()));
+            }
+
+            Self::ExpectedStructBody { got } => {
+                return Cow::Owned(format!("expected struct body, {}", got.message()));
             }
 
             Self::ExpectedPipelineKind { got } => {
